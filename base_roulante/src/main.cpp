@@ -1,18 +1,29 @@
-#include <Arduino.h>
+#include <AccelStepper.h>
 
-// put function declarations here:
-int myFunction(int, int);
+AccelStepper stepper(1, 2, 5);
+AccelStepper stepper2(1, 3, 6);
+AccelStepper stepper3(1, 4, 7);
+AccelStepper stepper4(1, 12, 13);
 
-void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+void setup()
+{
+  pinMode(8, OUTPUT);
+  digitalWrite(8, LOW);
+
+  stepper.setMaxSpeed(2000);
+  stepper.setSpeed(2000);
+  stepper2.setMaxSpeed(2000);
+  stepper2.setSpeed(2000);
+  stepper3.setMaxSpeed(2000);
+  stepper3.setSpeed(2000);
+  stepper4.setMaxSpeed(2000);
+  stepper4.setSpeed(2000);
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
-}
-
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
+void loop()
+{
+  stepper.runSpeed();
+  stepper2.runSpeed();
+  stepper3.runSpeed();
+  stepper4.runSpeed();
 }
