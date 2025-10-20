@@ -31,11 +31,19 @@ struct __attribute__((packed)) STRUCT
   uint8_t compteur;      // Compteur
 } message;
 
-void setSpeed(int speed)
+void avancer(int speed)
 {
   stepper.setSpeed(speed);
   stepper2.setSpeed(speed);
   stepper3.setSpeed(speed);
+  stepper4.setSpeed(speed);
+}
+
+void translater(int speed)
+{
+  stepper.setSpeed(-speed);
+  stepper2.setSpeed(speed);
+  stepper3.setSpeed(-speed);
   stepper4.setSpeed(speed);
 }
 
@@ -54,12 +62,13 @@ void setup()
   stepper3.setMaxSpeed(MAX_SPEED);
   stepper4.setMaxSpeed(MAX_SPEED);
 
-  setSpeed(0);
+  avancer(0);
 }
 
 int x_prev = 0;
 
 void loop()
+
 {
   if (transfer.available())
   {
@@ -67,6 +76,8 @@ void loop()
     recSize = transfer.rxObj(message, recSize);
 
     int x = map(message.x, 0, 1023, -MAX_SPEED, MAX_SPEED);
+    int y = map(message.y, 0, 1023, -MAX_SPEED, MAX_SPEED);
+    int z = map(message.z, 0, 1023, -MAX_SPEED, MAX_SPEED);
 
 #if DEBUG
     Serial.print("x=");
@@ -74,9 +85,13 @@ void loop()
 #endif
 
     if (abs(x) <= DEAD_ZONE) {
-      setSpeed(0);
+      avancer(0);
     } else if (x != x_prev) {
-      setSpeed(x);
+      if (abs(y) > abs(x)) {
+        translater(y);
+      } else {
+        translater(x);
+      }
     }
   }
 
