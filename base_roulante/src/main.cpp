@@ -42,10 +42,10 @@ void avancer(int speed)
 
 void translater(int speed)
 {
-  stepper.setSpeed(-speed);
-  stepper2.setSpeed(speed);
-  stepper3.setSpeed(-speed);
-  stepper4.setSpeed(speed);
+  stepper.setSpeed(speed);
+  stepper2.setSpeed(-speed);
+  stepper3.setSpeed(speed);
+  stepper4.setSpeed(-speed);
 }
 
 void pivoter(int speed)
