@@ -104,22 +104,21 @@ void loop()
       if (abs(x) > abs(y) && abs(x) > abs(z)) 
        { avancer(x);
         #if DEBUG
-    Serial.println("avancer: " + String(x) + "\n");
-#endif
-  
-      }
+        Serial.println("avancer: " + String(x) + "\n");
+        #endif
+       }
        else if (abs(y) > abs(x) && abs(y) > abs(z))
        { translater(y);
          #if DEBUG
-    Serial.println("translater: " + String(y) + "\n");
-#endif
+         Serial.println("translater: " + String(y) + "\n");
+         #endif
        }
        else if (abs(z) > abs(x) && abs(z) > abs(y))
        { pivoter(z);
           #if DEBUG
-    Serial.println("pivoter: " + String(z) + "\n");
-#endif
-    }
+           Serial.println("pivoter: " + String(z) + "\n");
+          #endif
+       }
   }
 }
   stepper.runSpeed();
