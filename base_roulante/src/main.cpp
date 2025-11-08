@@ -1,3 +1,4 @@
+
 #include <AccelStepper.h>
 #include "Arduino.h"
 #include <SerialTransfer.h>
@@ -47,6 +48,14 @@ void translater(int speed)
   stepper4.setSpeed(speed);
 }
 
+void pivoter(int speed)
+{
+  stepper.setSpeed(-speed);
+  stepper2.setSpeed(-speed);
+  stepper3.setSpeed(speed);
+  stepper4.setSpeed(speed);
+}
+
 void setup()
 {
   // Initialisation du port série
@@ -68,7 +77,6 @@ void setup()
 int x_prev = 0;
 
 void loop()
-
 {
   if (transfer.available())
   {
@@ -81,22 +89,42 @@ void loop()
 
 #if DEBUG
     Serial.print("x=");
-    Serial.println(x);
+    Serial.print(x);
+    Serial.print("\ty=");
+    Serial.print(y);
+    Serial.print("\tz=");
+    Serial.print(z);
+    Serial.print("\n");
 #endif
 
-    if (abs(x) <= DEAD_ZONE) {
+    if (abs(x) <= DEAD_ZONE && abs(y) <= DEAD_ZONE && abs(z) <= DEAD_ZONE) {
       avancer(0);
-    } else if (x != x_prev) {
-      if (abs(y) > abs(x)) {
-        translater(y);
-      } else {
-        translater(x);
+    } 
+    else{
+      if (abs(x) > abs(y) && abs(x) > abs(z)) 
+       { avancer(x);
+        #if DEBUG
+    Serial.println("avancer: " + String(x) + "\n");
+#endif
+  
       }
+       else if (abs(y) > abs(x) && abs(y) > abs(z))
+       { translater(y);
+         #if DEBUG
+    Serial.println("translater: " + String(y) + "\n");
+#endif
+       }
+       else if (abs(z) > abs(x) && abs(z) > abs(y))
+       { pivoter(z);
+          #if DEBUG
+    Serial.println("pivoter: " + String(z) + "\n");
+#endif
     }
   }
-
+}
   stepper.runSpeed();
   stepper2.runSpeed();
   stepper3.runSpeed();
   stepper4.runSpeed();
-}
+ }
+
