@@ -1,26 +1,72 @@
-// Moteur pas à pas avec AccelStepper
-
+#include <Arduino.h>
+#include <ESP32Servo.h>
 #include <AccelStepper.h>
 
+
+
+// tirette
+#define PIN_START 10      // GPIO 10 utilisé pour la tirette
+#define PIN_SERVO1 6      // Servo sur GPIO6 et GPIO05
+
+// stepper motors
 AccelStepper stepper(1, 1, 2);  // Defaults to AccelStepper::FULL4WIRE (4 pins) on 2, 3, 4, 5
 AccelStepper stepper2(1, 3, 4); // Defaults to AccelStepper::FULL4WIRE (4 pins) on 2, 3, 4, 5
 
-void setup()
-{
-   int speed = 3000;
+//  servo
+Servo myservo; 
+bool started = false;
+
+void setup() {
+    Serial.begin(115200);
+
+    // Tirette
+    pinMode(PIN_START, INPUT_PULLUP);  
+
+    myservo.attach(PIN_SERVO1);
+    myservo.write(0);  // Position neutre initiale
+
+
+   // Steppers
+   int speed = 5000;
    pinMode(0, OUTPUT);
    digitalWrite(0, LOW);
    stepper.setMaxSpeed(speed);
    stepper.setSpeed(speed);
    stepper2.setMaxSpeed(speed);
    stepper2.setSpeed(speed);
+
 }
 
-void loop()
-{
-   stepper.runSpeed();
-   stepper2.runSpeed();
+void loop() {
+    int startSignal = digitalRead(PIN_START);
+
+    if (!started) {
+        if (startSignal == HIGH) {
+            Serial.println("🚀 Démarrage du servo !");
+            started = true;
+        } else {
+            Serial.println("En attente de la tirette...");
+            delay(300);
+            return;   // Tant que la tirette n’est pas retirée, on ne fait rien
+        }
+    }
+
+    // Le robot est démarré : on bouge le servo
+    for (int pos = 0; pos <= 180; pos++) {
+        myservo.write(pos);
+        delay(10);
+    }
+    for (int pos = 180; pos >= 0; pos--) {
+        myservo.write(pos);
+        delay(10);
+    }
+
+
+    // les steppers
+    stepper.runSpeed();
+    stepper2.runSpeed();
 }
+
 
 // Ecran OLED avec décompte et lettre à gauche
 
@@ -101,3 +147,4 @@ void loop()
 
 //   while (true); // stop
 // }
+
