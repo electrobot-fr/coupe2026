@@ -6,15 +6,91 @@
 
 // tirette
 #define PIN_START 10      // GPIO 10 utilisé pour la tirette
-#define PIN_SERVO1 6      // Servo sur GPIO6 et GPIO05
+#define PIN_SERVO1 5      // Servo sur GPIO05
+#define PIN_SERVO2 6      // Servo sur GPIO6
 
-// stepper motors
-AccelStepper stepper(1, 1, 2);  // Defaults to AccelStepper::FULL4WIRE (4 pins) on 2, 3, 4, 5
-AccelStepper stepper2(1, 3, 4); // Defaults to AccelStepper::FULL4WIRE (4 pins) on 2, 3, 4, 5
+// stepper motors : Droite stepperD, gauche stepperG
+AccelStepper stepperD(1, 1, 2);  // Defaults to AccelStepper::FULL4WIRE (4 pins) on 2, 3, 4, 5
+AccelStepper stepperG(1, 3, 4); // Defaults to AccelStepper::FULL4WIRE (4 pins) on 2, 3, 4, 5
 
 //  servo
-Servo myservo; 
-bool started = false;
+Servo servo1; 
+
+// Variables globales
+bool started = false; // Indique si le robot a démarré
+bool mouvement_termine = false; // Indique si la séquence de mouvement est terminée
+
+// Paramètres du robot à ajuster 
+const float WHEEL_DIAMETER = 60.0;  // Diamètre des roues en mm
+const int STEPS_PER_REV = 200;      // Nombre de pas par tour du moteur (200 pour 1.8°, 400 pour 0.9°)
+const int MICROSTEPS = 1;            // Microstepping (1, 2, 4, 8, 16, etc.)
+const float STEPS_PER_MM = (STEPS_PER_REV * MICROSTEPS) / (PI * WHEEL_DIAMETER);
+
+// Fonction pour avancer d'une distance en mm
+void avancer(float distance_mm) {
+    long steps = (long)(distance_mm * STEPS_PER_MM);
+    
+    Serial.print("Avance de ");
+    Serial.print(distance_mm);
+    Serial.print(" mm (");
+    Serial.print(steps);
+    Serial.println(" pas)");
+    
+    stepperD.move(steps);
+    stepperG.move(steps);
+    
+    // Attendre que les deux moteurs atteignent leur position
+    while (stepperD.distanceToGo() != 0 || stepperG.distanceToGo() != 0) {
+        stepperD.run();
+        stepperG.run();
+    }
+    
+    Serial.println("Distance atteinte ! Arrêt des moteurs.");
+}
+
+// Fonction pour tourner à droite (roue droite recule, roue gauche avance)
+void tourner_droite(float distance_mm) {
+    long steps = (long)(distance_mm * STEPS_PER_MM);
+    
+    Serial.print("Tourne à droite de ");
+    Serial.print(distance_mm);
+    Serial.print(" mm (");
+    Serial.print(steps);
+    Serial.println(" pas)");
+    
+    stepperD.move(-steps);  // Roue droite recule
+    stepperG.move(steps);   // Roue gauche avance
+    
+    // Attendre que les deux moteurs atteignent leur position
+    while (stepperD.distanceToGo() != 0 || stepperG.distanceToGo() != 0) {
+        stepperD.run();
+        stepperG.run();
+    }
+    
+    Serial.println("Rotation à droite terminée !");
+}
+
+// Fonction pour tourner à gauche (roue droite avance, roue gauche recule)
+void tourner_gauche(float distance_mm) {
+    long steps = (long)(distance_mm * STEPS_PER_MM);
+    
+    Serial.print("Tourne à gauche de ");
+    Serial.print(distance_mm);
+    Serial.print(" mm (");
+    Serial.print(steps);
+    Serial.println(" pas)");
+    
+    stepperD.move(steps);   // Roue droite avance
+    stepperG.move(-steps);  // Roue gauche recule
+    
+    // Attendre que les deux moteurs atteignent leur position
+    while (stepperD.distanceToGo() != 0 || stepperG.distanceToGo() != 0) {
+        stepperD.run();
+        stepperG.run();
+    }
+    
+    Serial.println("Rotation à gauche terminée !");
+}
 
 void setup() {
     Serial.begin(115200);
@@ -22,18 +98,20 @@ void setup() {
     // Tirette
     pinMode(PIN_START, INPUT_PULLUP);  
 
-    myservo.attach(PIN_SERVO1);
-    myservo.write(0);  // Position neutre initiale
+    servo1.attach(PIN_SERVO1);
+    servo1.write(0);  // Position neutre initiale
 
 
    // Steppers
-   int speed = 5000;
+   int speed = 3000;
    pinMode(0, OUTPUT);
    digitalWrite(0, LOW);
-   stepper.setMaxSpeed(speed);
-   stepper.setSpeed(speed);
-   stepper2.setMaxSpeed(speed);
-   stepper2.setSpeed(speed);
+   stepperD.setMaxSpeed(speed);
+   stepperD.setSpeed(speed);
+   stepperD.setAcceleration(1000);  // Accélération pour la fonction avancer()
+   stepperG.setMaxSpeed(speed);
+   stepperG.setSpeed(speed);
+   stepperG.setAcceleration(1000);  // Accélération pour la fonction avancer()
 
 }
 
@@ -42,7 +120,7 @@ void loop() {
 
     if (!started) {
         if (startSignal == HIGH) {
-            Serial.println("🚀 Démarrage du servo !");
+            Serial.println("Démarrage ...");
             started = true;
         } else {
             Serial.println("En attente de la tirette...");
@@ -51,20 +129,32 @@ void loop() {
         }
     }
 
-    // Le robot est démarré : on bouge le servo
-    for (int pos = 0; pos <= 180; pos++) {
-        myservo.write(pos);
-        delay(10);
+    // Les steppers - exécuté une seule fois
+    if (!mouvement_termine) {
+        Serial.println("Démarrage des Stepper !");
+        
+        // Séquence de mouvements
+        avancer(1000);        // Avance de 1000 mm
+        delay(500);
+        
+        tourner_droite(500);  // Tourne à droite de 500 mm
+        delay(500);
+        
+        tourner_gauche(400);  // Tourne à gauche de 400 mm
+        delay(500);
+        
+        mouvement_termine = true;
+        Serial.println("Séquence de mouvements terminée. Activation du servo en continu.");
     }
-    for (int pos = 180; pos >= 0; pos--) {
-        myservo.write(pos);
-        delay(10);
+    
+    // Une fois le mouvement terminé, le servo fonctionne en permanence
+    if (mouvement_termine) {
+        servo1.write(180);
+        delay(500);  
+        servo1.write(0);  
+        delay(500);
     }
 
-
-    // les steppers
-    stepper.runSpeed();
-    stepper2.runSpeed();
 }
 
 
