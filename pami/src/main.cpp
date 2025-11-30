@@ -1,11 +1,30 @@
 #include <Arduino.h>
+
+// Servo
 #include <ESP32Servo.h>
+
+// Steppers
 #include <AccelStepper.h>
 
+// I2C & OLED
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 32
+#define OLED_ADDR 0x3C
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+// Lettre à afficher à gauche
+char lettreGauche = 'J'; // peut être 'J' ou 'B'
 
 
 // tirette
 #define PIN_START 10      // GPIO 10 utilisé pour la tirette
+
+// Servos
 #define PIN_SERVO1 5      // Servo sur GPIO05
 #define PIN_SERVO2 6      // Servo sur GPIO6
 
@@ -18,6 +37,7 @@ Servo servo1;
 
 // Variables globales
 bool started = false; // Indique si le robot a démarré
+bool decompte_termine = false; // Indique si le décompte est terminé
 bool mouvement_termine = false; // Indique si la séquence de mouvement est terminée
 
 // Paramètres du robot à ajuster 
@@ -92,12 +112,70 @@ void tourner_gauche(float distance_mm) {
     Serial.println("Rotation à gauche terminée !");
 }
 
+// Fonction de décompte de 85 secondes avec affichage OLED
+void decompte() {
+    Serial.println("Début du décompte de 85 secondes...");
+    
+    for (int i = 15; i >= 0; i--) {
+        display.clearDisplay();
+        
+        // === Afficher la lettre à gauche ===
+        display.setTextColor(SSD1306_WHITE);
+        display.setTextSize(4);  
+        int16_t lettreX = 2;
+        int16_t lettreY = (SCREEN_HEIGHT - 8*4)/2; // centré verticalement
+        display.setCursor(lettreX, lettreY);
+        display.print(lettreGauche);
+
+        // === Définir taille du texte du compteur selon nombre de chiffres ===
+        int textSize = 4;
+        if (i >= 100) textSize = 3;
+        else if (i >= 10) textSize = 4;
+        else textSize = 5;
+
+        display.setTextSize(textSize);
+
+        // Calcul largeur du texte
+        int nbChiffres = (i < 10 ? 1 : (i < 100 ? 2 : 3));
+        int largeurTexte = 6 * textSize * nbChiffres;
+        int hauteurTexte = 8 * textSize;
+
+        // Centrage horizontal du compteur avec espace pour la lettre
+        int16_t espaceLettre = 20; // espace réservé pour la lettre à gauche
+        int16_t compteurX = (SCREEN_WIDTH - largeurTexte + espaceLettre)/2 + espaceLettre;
+        int16_t compteurY = (SCREEN_HEIGHT - hauteurTexte)/2;
+
+        display.setCursor(compteurX, compteurY);
+        display.print(i);
+
+        display.display();
+
+        Serial.print("Décompte : ");
+        Serial.println(i);
+        delay(1000);
+    }
+
+    // Fin du décompte
+    display.clearDisplay();
+    display.setTextSize(2);
+    display.setCursor(10, 10);
+    display.print("GO !");
+    display.display();
+    
+    Serial.println("Décompte terminé ! Début des mouvements.");
+    decompte_termine = true;
+}
+
+
+
+
 void setup() {
     Serial.begin(115200);
 
     // Tirette
     pinMode(PIN_START, INPUT_PULLUP);  
 
+    // Servo
     servo1.attach(PIN_SERVO1);
     servo1.write(0);  // Position neutre initiale
 
@@ -113,24 +191,70 @@ void setup() {
    stepperG.setSpeed(speed);
    stepperG.setAcceleration(1000);  // Accélération pour la fonction avancer()
 
+   // Display OLED
+   Wire.begin(8, 9); // SDA=8, SCL=9
+   if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
+     Serial.println(F("Erreur : OLED non détecté"));
+     for (;;);
+   }
+   
+   // Affichage initial : lettre et message d'attente
+   display.clearDisplay();
+   display.setTextColor(SSD1306_WHITE);
+   
+   // Afficher la lettre en haut à gauche
+   display.setTextSize(4);
+   display.setCursor(2, 0);
+   display.print(lettreGauche);
+   
+   // Afficher "tirette en place !"
+   display.setTextSize(1);
+   display.setCursor(0, 24);
+   display.print("Tirette en place !");
+   
+   display.display();
+
 }
 
 void loop() {
-    int startSignal = digitalRead(PIN_START);
 
+    // attendre tant que la tirette n'est pas retirée
+    int startSignal = digitalRead(PIN_START);
     if (!started) {
         if (startSignal == HIGH) {
-            Serial.println("Démarrage ...");
+            Serial.println("Tirette retirée ! Démarrage du décompte...");
             started = true;
         } else {
+            // Afficher en continu le message d'attente
+            display.clearDisplay();
+            display.setTextColor(SSD1306_WHITE);
+            
+            // Afficher la lettre en haut à gauche
+            display.setTextSize(4);
+            display.setCursor(2, 0);
+            display.print(lettreGauche);
+            
+            // Afficher "tirette en place !"
+            display.setTextSize(1);
+            display.setCursor(0, 24);
+            display.print("Tirette en place !");
+            
+            display.display();
+            
             Serial.println("En attente de la tirette...");
             delay(300);
-            return;   // Tant que la tirette n’est pas retirée, on ne fait rien
+            return;   // Tant que la tirette n'est pas retirée, on ne fait rien
         }
     }
 
-    // Les steppers - exécuté une seule fois
-    if (!mouvement_termine) {
+    // Décompte de 85 secondes après retrait de la tirette
+    if (started && !decompte_termine) {
+        decompte();
+        return;
+    }
+
+    // Se déplacer à la destination (Les steppers - exécuté une seule fois)
+    if (decompte_termine && !mouvement_termine) {
         Serial.println("Démarrage des Stepper !");
         
         // Séquence de mouvements
@@ -147,7 +271,8 @@ void loop() {
         Serial.println("Séquence de mouvements terminée. Activation du servo en continu.");
     }
     
-    // Une fois le mouvement terminé, le servo fonctionne en permanence
+    //mouvement_termine = true;
+    // Une fois arrivé à destination, le servo fonctionne en permanence
     if (mouvement_termine) {
         servo1.write(180);
         delay(500);  
