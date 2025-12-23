@@ -1,17 +1,39 @@
-#include <AccelStepper.h>
+#include <FastAccelStepper.h>
 #include <SerialTransfer.h>
 #include "Wire.h"
 
 #define LED_BUILTIN 2
-#define MAX_SPEED 2500
+#define MAX_SPEED 3500
 #define DEAD_ZONE MAX_SPEED / 10
+#define ACCELERATION 30000
 
 SerialTransfer transfer;
 
-AccelStepper stepper(1, 14, 12);
-AccelStepper stepper2(1, 27, 26);
-AccelStepper stepper3(1, 25, 33);
-AccelStepper stepper4(1, 15, 32);
+// FastAccelStepper engine and steppers
+FastAccelStepperEngine engine = FastAccelStepperEngine();
+FastAccelStepper *stepper = NULL;
+FastAccelStepper *stepper2 = NULL;
+FastAccelStepper *stepper3 = NULL;
+FastAccelStepper *stepper4 = NULL;
+
+// helper to set continuous speed for a FastAccelStepper (signed steps/s)
+static void setStepperTarget(FastAccelStepper *s, int speed)
+{
+  if (!s)
+    return;
+  if (speed == 0)
+  {
+    s->stopMove();
+    return;
+  }
+  uint32_t sp = (uint32_t)abs(speed);
+  s->setSpeedInHz(sp);
+  if (speed > 0)
+    s->runForward();
+  else
+    s->runBackward();
+  s->applySpeedAcceleration();
+}
 
 struct __attribute__((packed)) STRUCT
 {
@@ -32,26 +54,26 @@ struct __attribute__((packed)) STRUCT
 
 void avancer(int speed)
 {
-  stepper.setSpeed(speed);
-  stepper2.setSpeed(speed);
-  stepper3.setSpeed(speed);
-  stepper4.setSpeed(speed);
+  setStepperTarget(stepper, speed);
+  setStepperTarget(stepper2, speed);
+  setStepperTarget(stepper3, speed);
+  setStepperTarget(stepper4, speed);
 }
 
 void translater(int speed)
 {
-  stepper.setSpeed(speed);
-  stepper2.setSpeed(-speed);
-  stepper3.setSpeed(speed);
-  stepper4.setSpeed(-speed);
+  setStepperTarget(stepper, speed);
+  setStepperTarget(stepper2, -speed);
+  setStepperTarget(stepper3, speed);
+  setStepperTarget(stepper4, -speed);
 }
 
 void pivoter(int speed)
 {
-  stepper.setSpeed(-speed);
-  stepper2.setSpeed(-speed);
-  stepper3.setSpeed(speed);
-  stepper4.setSpeed(speed);
+  setStepperTarget(stepper, -speed);
+  setStepperTarget(stepper2, -speed);
+  setStepperTarget(stepper3, speed);
+  setStepperTarget(stepper4, speed);
 }
 
 void setup()
@@ -63,10 +85,40 @@ void setup()
   pinMode(13, OUTPUT);
   digitalWrite(13, LOW); // CHANGE ME
 
-  stepper.setMaxSpeed(MAX_SPEED);
-  stepper2.setMaxSpeed(MAX_SPEED);
-  stepper3.setMaxSpeed(MAX_SPEED);
-  stepper4.setMaxSpeed(MAX_SPEED);
+  // Initialize FastAccelStepper engine and allocate steppers
+  engine.init();
+  stepper = engine.stepperConnectToPin(14);
+  stepper2 = engine.stepperConnectToPin(27);
+  stepper3 = engine.stepperConnectToPin(25);
+  stepper4 = engine.stepperConnectToPin(15);
+  if (stepper)
+  {
+    stepper->setDirectionPin(12);
+    stepper->setAutoEnable(true);
+    stepper->setAcceleration(ACCELERATION);
+    stepper->setSpeedInHz(0);
+  }
+  if (stepper2)
+  {
+    stepper2->setDirectionPin(26);
+    stepper2->setAutoEnable(true);
+    stepper2->setAcceleration(ACCELERATION);
+    stepper2->setSpeedInHz(0);
+  }
+  if (stepper3)
+  {
+    stepper3->setDirectionPin(33);
+    stepper3->setAutoEnable(true);
+    stepper3->setAcceleration(ACCELERATION);
+    stepper3->setSpeedInHz(0);
+  }
+  if (stepper4)
+  {
+    stepper4->setDirectionPin(32);
+    stepper4->setAutoEnable(true);
+    stepper4->setAcceleration(ACCELERATION);
+    stepper4->setSpeedInHz(0);
+  }
 
   avancer(0);
 
@@ -82,7 +134,6 @@ void loop()
     digitalWrite(LED_BUILTIN, HIGH);
     uint16_t recSize = 0;
     recSize = transfer.rxObj(message, recSize);
-    digitalWrite(LED_BUILTIN, LOW);
 
     int x = map(message.x, 0, 1023, -MAX_SPEED, MAX_SPEED);
     int y = map(message.y, 0, 1023, -MAX_SPEED, MAX_SPEED);
@@ -107,9 +158,6 @@ void loop()
         pivoter(z);
       }
     }
+    digitalWrite(LED_BUILTIN, LOW);
   }
-  stepper.runSpeed();
-  stepper2.runSpeed();
-  stepper3.runSpeed();
-  stepper4.runSpeed();
 }
