@@ -1,19 +1,17 @@
-
 #include <AccelStepper.h>
-#include "Arduino.h"
 #include <SerialTransfer.h>
 #include "Wire.h"
 
-#define DEBUG 0
-#define MAX_SPEED 2000
-#define DEAD_ZONE MAX_SPEED/10
+#define LED_BUILTIN 2
+#define MAX_SPEED 2500
+#define DEAD_ZONE MAX_SPEED / 10
 
 SerialTransfer transfer;
 
-AccelStepper stepper(1, 2, 5);
-AccelStepper stepper2(1, 3, 6);
-AccelStepper stepper3(1, 4, 7);
-AccelStepper stepper4(1, 12, 13);
+AccelStepper stepper(1, 14, 12);
+AccelStepper stepper2(1, 27, 26);
+AccelStepper stepper3(1, 25, 33);
+AccelStepper stepper4(1, 15, 32);
 
 struct __attribute__((packed)) STRUCT
 {
@@ -58,13 +56,12 @@ void pivoter(int speed)
 
 void setup()
 {
-  // Initialisation du port série
-  Serial.begin(115200);
-  Serial2.begin(115200);
-  transfer.begin(Serial2);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
 
-  pinMode(8, OUTPUT);
-  digitalWrite(8, LOW);
+  int speed = 3000;
+  pinMode(13, OUTPUT);
+  digitalWrite(13, LOW); // CHANGE ME
 
   stepper.setMaxSpeed(MAX_SPEED);
   stepper2.setMaxSpeed(MAX_SPEED);
@@ -72,58 +69,47 @@ void setup()
   stepper4.setMaxSpeed(MAX_SPEED);
 
   avancer(0);
-}
 
-int x_prev = 0;
+  Serial2.begin(115200, SERIAL_8N1, 16, 17);
+  transfer.begin(Serial2);
+  Serial.begin(115200);
+}
 
 void loop()
 {
   if (transfer.available())
   {
+    digitalWrite(LED_BUILTIN, HIGH);
     uint16_t recSize = 0;
     recSize = transfer.rxObj(message, recSize);
+    digitalWrite(LED_BUILTIN, LOW);
 
     int x = map(message.x, 0, 1023, -MAX_SPEED, MAX_SPEED);
     int y = map(message.y, 0, 1023, -MAX_SPEED, MAX_SPEED);
     int z = map(message.z, 0, 1023, -MAX_SPEED, MAX_SPEED);
 
-#if DEBUG
-    Serial.print("x=");
-    Serial.print(x);
-    Serial.print("\ty=");
-    Serial.print(y);
-    Serial.print("\tz=");
-    Serial.print(z);
-    Serial.print("\n");
-#endif
-
-    if (abs(x) <= DEAD_ZONE && abs(y) <= DEAD_ZONE && abs(z) <= DEAD_ZONE) {
+    if (abs(x) <= DEAD_ZONE && abs(y) <= DEAD_ZONE && abs(z) <= DEAD_ZONE)
+    {
       avancer(0);
-    } 
-    else{
-      if (abs(x) > abs(y) && abs(x) > abs(z)) 
-       { avancer(x);
-        #if DEBUG
-        Serial.println("avancer: " + String(x) + "\n");
-        #endif
-       }
-       else if (abs(y) > abs(x) && abs(y) > abs(z))
-       { translater(y);
-         #if DEBUG
-         Serial.println("translater: " + String(y) + "\n");
-         #endif
-       }
-       else if (abs(z) > abs(x) && abs(z) > abs(y))
-       { pivoter(z);
-          #if DEBUG
-           Serial.println("pivoter: " + String(z) + "\n");
-          #endif
-       }
+    }
+    else
+    {
+      if (abs(x) > abs(y) && abs(x) > abs(z))
+      {
+        avancer(x);
+      }
+      else if (abs(y) > abs(x) && abs(y) > abs(z))
+      {
+        translater(y);
+      }
+      else if (abs(z) > abs(x) && abs(z) > abs(y))
+      {
+        pivoter(z);
+      }
+    }
   }
-}
   stepper.runSpeed();
   stepper2.runSpeed();
   stepper3.runSpeed();
   stepper4.runSpeed();
- }
-
+}
