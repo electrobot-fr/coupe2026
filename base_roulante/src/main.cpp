@@ -76,6 +76,37 @@ void translater(int speed)
   setStepperTarget(stepper4, speed);
 }
 
+void move(int A, int B, int R)
+{
+    // A = X (gauche / droite)
+    // B = Y (avant / arrière)
+    // R = rotation
+
+    int v1 =  A - B - R;   // avant gauche
+    int v2 =  A + B - R;   // arrière gauche
+    int v3 =  A + B + R;   // avant droit
+    int v4 =  A - B + R;   // arrière droit
+
+    // Normalisation si nécessaire
+    int max = abs(v1);
+    if (abs(v2) > max) max = abs(v2);
+    if (abs(v3) > max) max = abs(v3);
+    if (abs(v4) > max) max = abs(v4);
+
+    if (max > MAX_SPEED)
+    {
+        v1 = v1 * MAX_SPEED / max;
+        v2 = v2 * MAX_SPEED / max;
+        v3 = v3 * MAX_SPEED / max;
+        v4 = v4 * MAX_SPEED / max;
+    }
+
+    setStepperTarget(stepper,  v1);
+    setStepperTarget(stepper3, -v2);
+    setStepperTarget(stepper2,  -v3);
+    setStepperTarget(stepper4,  v4);
+}
+
 void setup()
 {
   pinMode(LED_BUILTIN, OUTPUT);
@@ -147,11 +178,11 @@ void loop()
     {
       if (abs(x) > abs(y) && abs(x) > abs(z))
       {
-        avancer(x);
+        move(y, x, 0);
       }
       else if (abs(y) > abs(x) && abs(y) > abs(z))
       {
-        translater(y);
+        move(y, x, 0);
       }
       else if (abs(z) > abs(x) && abs(z) > abs(y))
       {
