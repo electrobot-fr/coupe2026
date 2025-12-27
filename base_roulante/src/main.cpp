@@ -3,7 +3,7 @@
 #include "Wire.h"
 
 #define LED_BUILTIN 2
-#define MAX_SPEED 3500
+#define MAX_SPEED 4500
 #define DEAD_ZONE MAX_SPEED / 10
 #define ACCELERATION 30000
 
@@ -60,7 +60,7 @@ void avancer(int speed)
   setStepperTarget(stepper4, speed);
 }
 
-void translater(int speed)
+void pivoter(int speed)
 {
   setStepperTarget(stepper, speed);
   setStepperTarget(stepper2, -speed);
@@ -68,7 +68,7 @@ void translater(int speed)
   setStepperTarget(stepper4, -speed);
 }
 
-void pivoter(int speed)
+void translater(int speed)
 {
   setStepperTarget(stepper, -speed);
   setStepperTarget(stepper2, -speed);
@@ -155,7 +155,7 @@ void loop()
       }
       else if (abs(z) > abs(x) && abs(z) > abs(y))
       {
-        pivoter(z);
+        pivoter(-z);
       }
     }
     digitalWrite(LED_BUILTIN, LOW);
