@@ -1,6 +1,8 @@
 // Source: https://randomnerdtutorials.com/esp-now-esp32-arduino-ide/
 // MAC = 88:13:bf:24:87:20 (telecommande)
 // 58:8c:81:9e:aa:48 (supermini)
+// 58:8c:81:9e:c0:20 (ecureuil)
+// 08:a6:f7:6b:2f:90 (bandeau led)
 
 #include <esp_now.h>
 #include <WiFi.h>
