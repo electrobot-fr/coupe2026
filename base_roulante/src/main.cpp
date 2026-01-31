@@ -62,10 +62,10 @@ void avancer(int speed)
 
 void pivoter(int speed)
 {
-  setStepperTarget(stepper, speed);
+  setStepperTarget(stepper, -speed);
   setStepperTarget(stepper2, -speed);
   setStepperTarget(stepper3, speed);
-  setStepperTarget(stepper4, -speed);
+  setStepperTarget(stepper4, speed);
 }
 
 void translater(int speed)
@@ -178,11 +178,11 @@ void loop()
     {
       if (abs(x) > abs(y) && abs(x) > abs(z))
       {
-        move(y, x, 0);
+        move(-x, -y, 0);
       }
       else if (abs(y) > abs(x) && abs(y) > abs(z))
       {
-        move(y, x, 0);
+        move(-x, -y, 0);
       }
       else if (abs(z) > abs(x) && abs(z) > abs(y))
       {
