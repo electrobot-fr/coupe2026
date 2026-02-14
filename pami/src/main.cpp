@@ -18,7 +18,7 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 // Lettre à afficher à gauche
-char lettreGauche = 'J'; // peut être 'J' ou 'B'
+char lettreGauche = 'B'; // peut être 'J' équipe Jaune ou 'B' équipe Bleu
 
 
 // tirette
@@ -205,7 +205,17 @@ void loop() {
 
     // attendre tant que la tirette n'est pas retirée
     int startSignal = digitalRead(PIN_START);
+
+    // détermination équipe et affichage
     int equipe = digitalRead(PIN_EQUIPE);
+    if (equipe == LOW) {
+        equipe = JAUNE;
+        lettreGauche = 'J';
+    } else {
+        equipe = BLEU;
+        lettreGauche = 'B';
+    }
+    
     if (!started) {
         if (startSignal == LOW) {
             // "Tirette retirée ! Démarrage du décompte...
