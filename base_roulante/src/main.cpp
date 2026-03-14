@@ -4,7 +4,7 @@
 
 #define LED_BUILTIN 2
 #define MAX_SPEED 4500
-#define DEAD_ZONE MAX_SPEED / 10
+#define DEAD_ZONE (MAX_SPEED / 10)
 #define ACCELERATION 30000
 
 SerialTransfer transfer;
@@ -59,14 +59,6 @@ void pivoter(int speed)
   setStepperTarget(stepper4, speed);
 }
 
-void translater(int speed)
-{
-  setStepperTarget(stepper, -speed);
-  setStepperTarget(stepper2, -speed);
-  setStepperTarget(stepper3, speed);
-  setStepperTarget(stepper4, speed);
-}
-
 void move(int A, int B, int R)
 {
     // A = X (gauche / droite)
@@ -103,9 +95,8 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
 
-  int speed = 3000;
   pinMode(13, OUTPUT);
-  digitalWrite(13, LOW); // CHANGE ME
+  digitalWrite(13, LOW); // Enable motors
 
   // Initialize FastAccelStepper engine and allocate steppers
   engine.init();
@@ -142,8 +133,6 @@ void setup()
     stepper4->setSpeedInHz(0);
   }
 
-  avancer(0);
-
   Serial2.begin(115200, SERIAL_8N1, 16, 17);
   transfer.begin(Serial2);
   Serial.begin(115200);
@@ -165,20 +154,13 @@ void loop()
     {
       avancer(0);
     }
+    else if (abs(x) > DEAD_ZONE || abs(y) > DEAD_ZONE)
+    {
+      move(-x, -y, 0);
+    }
     else
     {
-      if (abs(x) > abs(y) && abs(x) > abs(z))
-      {
-        move(-x, -y, 0);
-      }
-      else if (abs(y) > abs(x) && abs(y) > abs(z))
-      {
-        move(-x, -y, 0);
-      }
-      else if (abs(z) > abs(x) && abs(z) > abs(y))
-      {
-        pivoter(-z);
-      }
+      pivoter(-z);
     }
     digitalWrite(LED_BUILTIN, LOW);
   }
