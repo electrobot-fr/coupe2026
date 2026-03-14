@@ -14,15 +14,15 @@ uint8_t broadcastAddress[] = {0x58, 0x8c, 0x81, 0x9e, 0xaa, 0x48};
 
 esp_now_peer_info_t peerInfo;
 
+uint32_t led_off_time = 0;
+
 // callback when data is sent
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  if (status == ESP_NOW_SEND_SUCCESS) {
-    digitalWrite(LED_BUILTIN, HIGH);
-  }
   Serial.print("\r\nLast Packet Send Status:\t");
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
   if (status == ESP_NOW_SEND_SUCCESS) {
-    digitalWrite(LED_BUILTIN, LOW);
+    digitalWrite(LED_BUILTIN, HIGH);
+    led_off_time = millis() + 50;
   }
 }
  
@@ -66,20 +66,23 @@ void setup() {
  
 #define BUFFER_SIZE 250 // max of 250 bytes
 const uint32_t timeout_micros = (int)(1.0 / BAUD_RATE * 1E6) * 20;
-uint8_t buf_recv[BUFFER_SIZE];
 uint8_t buf_send[BUFFER_SIZE];
 uint8_t buf_size = 0;
-uint32_t send_timeout = 0;
+uint32_t last_byte_time = 0;
 
 void loop() {
+  if (led_off_time && millis() >= led_off_time) {
+    digitalWrite(LED_BUILTIN, LOW);
+    led_off_time = 0;
+  }
   if (Serial2.available()) {
     while (Serial2.available() && buf_size < BUFFER_SIZE) {
       buf_send[buf_size] = Serial2.read();
-      send_timeout = micros() + timeout_micros;
+      last_byte_time = micros();
       buf_size++;
     }
   }
-  if (buf_size == BUFFER_SIZE || (buf_size > 0 && micros() >= send_timeout)) {
+  if (buf_size == BUFFER_SIZE || (buf_size > 0 && (micros() - last_byte_time) >= timeout_micros)) {
     esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &buf_send, buf_size);
     buf_size = 0;
   }

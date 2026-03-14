@@ -13,15 +13,10 @@ uint8_t emetteurAddress[] = {0x88, 0x13, 0xbf, 0x24, 0x87, 0x20};
 
 // callback function that will be executed when data is received
 void OnDataRecv(const uint8_t * macAddr, const uint8_t *incomingData, int len) {
-  if (macAddr[0] != emetteurAddress[0] ||
-      macAddr[1] != emetteurAddress[1] ||
-      macAddr[2] != emetteurAddress[2] ||
-      macAddr[3] != emetteurAddress[3] ||
-      macAddr[4] != emetteurAddress[4] ||
-      macAddr[5] != emetteurAddress[5]) {
+  if (memcmp(macAddr, emetteurAddress, 6) != 0) {
     return; // drop packets from other devices
   }
-  memcpy(&buf_recv, incomingData, sizeof(buf_recv));
+  memcpy(buf_recv, incomingData, len);
   digitalWrite(LED_BUILTIN, LOW);
   // Serial.write(buf_recv, len);
   Serial1.write(buf_recv, len);
