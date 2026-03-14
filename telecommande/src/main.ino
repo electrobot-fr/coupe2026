@@ -16,11 +16,13 @@ struct __attribute__((packed)) STRUCT
   int16_t y;
   int16_t z;
   uint16_t compteur[32]; 
-} message;
+} message = {};
 
 int16_t compteur = 0;
 int16_t afficheur = 0;
 int16_t afficheurPrev = 1;
+
+const uint8_t NUM_STATES = 2;
 
 // #define DEBUG
 
@@ -31,7 +33,7 @@ void setup()
   transfer.begin(Serial);
 #endif
 
-  buttonState = 1;
+  buttonState = 0;
   buttonSeqPrevDown = false;
   buttonSeqPrevUp = false;
   pinMode(A0, INPUT);
@@ -57,32 +59,31 @@ void setup()
 void loop()
 {
   message.x = analogRead(A3);
-  message.y = map(analogRead(A2), 0, 1024, 1024, 0);
+  message.y = map(analogRead(A2), 0, 1023, 1023, 0);
   message.z = analogRead(A0);
 
 
-  if (digitalRead(8) == LOW && !buttonSeqPrevUp)
+  bool btn8 = (digitalRead(8) == LOW);
+  if (btn8 && !buttonSeqPrevUp)
   {
-    buttonState++;
+    buttonState = (buttonState + 1) % NUM_STATES;
   }
-  buttonSeqPrevUp = (digitalRead(8) == LOW);
+  buttonSeqPrevUp = btn8;
 
-  if (digitalRead(9) == LOW && !buttonSeqPrevDown)
+  bool btn9 = (digitalRead(9) == LOW);
+  if (btn9 && !buttonSeqPrevDown)
   {
-    buttonState--;
+    buttonState = (buttonState - 1 + NUM_STATES) % NUM_STATES;
   }
-  buttonSeqPrevDown = (digitalRead(9) == LOW);
+  buttonSeqPrevDown = btn9;
 
   switch (buttonState)
   {
-  case 1:
+  case 0:
     message.compteur[0] = 200;
     break;
-  case 2: 
+  case 1:
     message.compteur[0] = 400;
-    break;
-  case 3:
-    buttonState = 1;
     break;
   }
 
