@@ -8,6 +8,8 @@
 #define ACCELERATION 30000
 
 SerialTransfer transfer;
+unsigned long lastPacketTime = 0;
+#define WATCHDOG_TIMEOUT 200 // ms sans réception → arrêt moteurs
 
 // FastAccelStepper engine and steppers
 FastAccelStepperEngine engine = FastAccelStepperEngine();
@@ -143,6 +145,7 @@ void loop()
   if (transfer.available())
   {
     digitalWrite(LED_BUILTIN, HIGH);
+    lastPacketTime = millis();
     uint16_t recSize = 0;
     recSize = transfer.rxObj(message, recSize);
 
@@ -163,5 +166,11 @@ void loop()
       pivoter(-z);
     }
     digitalWrite(LED_BUILTIN, LOW);
+  }
+
+  // Watchdog : arrêt moteurs si perte de communication
+  if (millis() - lastPacketTime > WATCHDOG_TIMEOUT)
+  {
+    avancer(0);
   }
 }
