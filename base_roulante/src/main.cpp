@@ -1,6 +1,5 @@
 #include <FastAccelStepper.h>
 #include <SerialTransfer.h>
-#include "Wire.h"
 
 #define LED_BUILTIN 2
 #define MAX_SPEED 4500
@@ -44,22 +43,6 @@ struct __attribute__((packed)) STRUCT
   int16_t z;
   uint16_t compteur[32]; 
 } message;
-
-void avancer(int speed)
-{
-  setStepperTarget(stepper, speed);
-  setStepperTarget(stepper2, speed);
-  setStepperTarget(stepper3, speed);
-  setStepperTarget(stepper4, speed);
-}
-
-void pivoter(int speed)
-{
-  setStepperTarget(stepper, -speed);
-  setStepperTarget(stepper2, -speed);
-  setStepperTarget(stepper3, speed);
-  setStepperTarget(stepper4, speed);
-}
 
 void move(int A, int B, int R)
 {
@@ -153,24 +136,17 @@ void loop()
     int y = map(message.y, 0, 1023, -MAX_SPEED, MAX_SPEED);
     int z = map(message.z, 0, 1023, -MAX_SPEED, MAX_SPEED);
 
-    if (abs(x) <= DEAD_ZONE && abs(y) <= DEAD_ZONE && abs(z) <= DEAD_ZONE)
-    {
-      avancer(0);
-    }
-    else if (abs(x) > DEAD_ZONE || abs(y) > DEAD_ZONE)
-    {
-      move(-x, -y, 0);
-    }
-    else
-    {
-      pivoter(-z);
-    }
+    if (abs(x) <= DEAD_ZONE) x = 0;
+    if (abs(y) <= DEAD_ZONE) y = 0;
+    if (abs(z) <= DEAD_ZONE) z = 0;
+
+    move(-x, -y, -z);
     digitalWrite(LED_BUILTIN, LOW);
   }
 
   // Watchdog : arrêt moteurs si perte de communication
   if (millis() - lastPacketTime > WATCHDOG_TIMEOUT)
   {
-    avancer(0);
+    move(0, 0, 0);
   }
 }
