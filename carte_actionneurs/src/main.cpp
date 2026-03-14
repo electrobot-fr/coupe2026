@@ -19,6 +19,11 @@ struct __attribute__((packed)) STRUCT
 
 SerialTransfer transfer;
 
+uint16_t lastCompteur[32] = {0};
+unsigned long lastReceived = 0;
+const unsigned long TIMEOUT_MS = 500;
+bool ledState = false;
+
 void setup()
 {
   pinMode(LED_BUILTIN, OUTPUT);
@@ -45,14 +50,33 @@ void loop()
 {
   if (transfer.available())
   {
-    digitalWrite(LED_BUILTIN, HIGH);
+    lastReceived = millis();
+    ledState = !ledState;
+    digitalWrite(LED_BUILTIN, ledState ? HIGH : LOW);
+
     uint16_t recSize = 0;
     recSize = transfer.rxObj(message, recSize);
 
     for (size_t i = 0; i < 16; i++)
     {
-      pwm1.setPWM(i, 0, message.compteur[i]);
-      pwm2.setPWM(i, 0, message.compteur[16 + i]);
+      uint16_t val1 = min(message.compteur[i], (uint16_t)4095);
+      uint16_t val2 = min(message.compteur[16 + i], (uint16_t)4095);
+
+      if (val1 != lastCompteur[i])
+      {
+        pwm1.setPWM(i, 0, val1);
+        lastCompteur[i] = val1;
+      }
+      if (val2 != lastCompteur[16 + i])
+      {
+        pwm2.setPWM(i, 0, val2);
+        lastCompteur[16 + i] = val2;
+      }
     }
+  }
+
+  if (millis() - lastReceived > TIMEOUT_MS)
+  {
+    digitalWrite(LED_BUILTIN, LOW);
   }
 }
