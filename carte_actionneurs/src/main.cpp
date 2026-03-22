@@ -2,8 +2,8 @@
 #include <SerialTransfer.h>
 #include <Adafruit_PWMServoDriver.h>
 
-Adafruit_PWMServoDriver pwm1 = Adafruit_PWMServoDriver(0x40);
-Adafruit_PWMServoDriver pwm2 = Adafruit_PWMServoDriver(0x41);
+Adafruit_PWMServoDriver pwm1 = Adafruit_PWMServoDriver(0x41);
+Adafruit_PWMServoDriver pwm2 = Adafruit_PWMServoDriver(0x40);
 
 #define SERVO_FREQ 50
 
@@ -29,11 +29,11 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
 
-  Serial2.begin(115200, SERIAL_8N1, 16, 17);
-  transfer.begin(Serial2);
+  // Serial2.begin(115200, SERIAL_8N1, 16, 17);
+  // transfer.begin(Serial2);
 
-  // Serial.begin(115200);
-  // transfer.begin(Serial);
+  Serial.begin(115200);
+  transfer.begin(Serial);
 
   pwm1.begin();
 
