@@ -15,6 +15,10 @@ struct __attribute__((packed)) STRUCT
   int16_t x;
   int16_t y;
   int16_t z;
+  // Vannes: 0-3
+  // Pompes: 4-7
+  // Servo bras: 8-11
+  // Servo tapis: 11-15
   uint16_t compteur[32]; 
 } message = {};
 
@@ -22,7 +26,7 @@ int16_t compteur = 0;
 int16_t afficheur = 0;
 int16_t afficheurPrev = 1;
 
-const uint8_t NUM_STATES = 2;
+const uint8_t NUM_STATES = 4;
 
 // #define DEBUG
 
@@ -80,10 +84,42 @@ void loop()
   switch (buttonState)
   {
   case 0:
-    message.compteur[0] = 200;
+    message.compteur[8] = 450;
+    message.compteur[9] = 450;
+    message.compteur[10] = 460;
+    message.compteur[11] = 480;
+
+    message.compteur[0] = 4095;
+    message.compteur[1] = 4095;
+    message.compteur[2] = 4095;
+    message.compteur[3] = 4095;
+
+    message.compteur[4] = 0;
+    message.compteur[5] = 0;
+    message.compteur[6] = 0;
+    message.compteur[7] = 0;
     break;
   case 1:
-    message.compteur[0] = 400;
+    message.compteur[4] = 4095;
+    message.compteur[5] = 4095;
+    message.compteur[6] = 4095;
+    message.compteur[7] = 4095;
+
+    message.compteur[0] = 0;
+    message.compteur[1] = 0;
+    message.compteur[2] = 0;
+    message.compteur[3] = 0;
+
+    message.compteur[8] = 495;
+    message.compteur[9] = 500;
+    message.compteur[10] = 495;
+    message.compteur[11] = 520;
+    break;
+  case 3:
+    message.compteur[8] = 450;
+    message.compteur[9] = 450;
+    message.compteur[10] = 460;
+    message.compteur[11] = 480;
     break;
   }
 
