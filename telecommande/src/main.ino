@@ -6,6 +6,7 @@ TM1637Display display(3, 2); // CLK, DIO
 
 SerialTransfer transfer;
 uint8_t buttonState;
+uint8_t buttonState2;
 
 bool buttonSeqPrevUp;
 bool buttonSeqPrevDown;
@@ -26,10 +27,17 @@ int16_t compteur = 0;
 int16_t afficheur = 0;
 int16_t afficheurPrev = 1;
 
+uint8_t retournerNoisettes = 0; // 4 bits: pin13=bit3, pin12=bit2, pin5=bit1, pin4=bit0
+
 unsigned long lastSendTime = 0;
 const unsigned long SEND_INTERVAL = 50;
 
+unsigned long vannesOffTime = 0;
+bool vannesTimerActive = false;
+const unsigned long VANNES_DELAY = 1000;
+
 const uint8_t NUM_STATES = 3;
+const uint8_t NUM_STATES_2 = 3;
 
 // #define DEBUG
 
@@ -63,6 +71,20 @@ void pompesOff()
   message.compteur[5] = 0;
   message.compteur[6] = 0;
   message.compteur[7] = 0;
+  // Ouvrir les vannes et demarrer le timer de 1s
+  vannesOn();
+  vannesTimerActive = true;
+  vannesOffTime = millis();
+}
+
+void bras2cmAuDessus()
+{
+  setBras(450, 450, 460, 480);
+}
+
+void brasAccroche()
+{
+  setBras(495, 500, 500, 520);
 }
 
 void setBras(uint16_t b0, uint16_t b1, uint16_t b2, uint16_t b3)
@@ -81,6 +103,7 @@ void setup()
 #endif
 
   buttonState = 0;
+  buttonState2 = 0;
   buttonSeqPrevDown = false;
   buttonSeqPrevUp = false;
   pinMode(A0, INPUT);
@@ -120,33 +143,60 @@ void loop()
   bool btn9 = (digitalRead(9) == LOW);
   if (btn9 && !buttonSeqPrevDown)
   {
-    buttonState = (buttonState - 1 + NUM_STATES) % NUM_STATES;
+    buttonState2 = (buttonState2 + 1) % NUM_STATES_2;
   }
   buttonSeqPrevDown = btn9;
 
+  // Sequence 1 (bouton 8)
   switch (buttonState)
   {
   case 0:
-    setBras(450, 450, 460, 480);
-    vannesOn();
+    bras2cmAuDessus();
     pompesOff();
     break;
   case 1:
     pompesOn();
-    vannesOff();
-    setBras(495, 500, 500, 520);
+    brasAccroche();
     break;
   case 2:
-    setBras(450, 450, 460, 480);
+    bras2cmAuDessus();
     break;
   }
 
-  afficheur = buttonState;
+  // Sequence 2 (bouton 9)
+  switch (buttonState2)
+  {
+  case 0:
+    bras2cmAuDessus();
+    pompesOff();
+    break;
+  case 1:
+    // TODO: mouvement 1 sequence 2
+    break;
+  case 2:
+    // TODO: mouvement 2 sequence 2
+    break;
+  }
+
+  // Fermer les vannes 1s apres pompesOff()
+  if (vannesTimerActive && (millis() - vannesOffTime >= VANNES_DELAY))
+  {
+    vannesOff();
+    vannesTimerActive = false;
+  }
+
+  // Lecture des 4 switchs noisettes (LOW = actif car INPUT_PULLUP)
+  retournerNoisettes = 0;
+  if (digitalRead(13) == LOW) retournerNoisettes |= 0b1000;
+  if (digitalRead(12) == LOW) retournerNoisettes |= 0b0100;
+  if (digitalRead(5) == LOW)  retournerNoisettes |= 0b0010;
+  if (digitalRead(4) == LOW)  retournerNoisettes |= 0b0001;
+
+  afficheur = retournerNoisettes;
 
   if (afficheur != afficheurPrev)
   {
     display.showNumberDec(afficheur);
-    delay(50);
   }
   afficheurPrev = afficheur;
 
