@@ -2,7 +2,7 @@
 #include <SerialTransfer.h>
 
 #define LED_BUILTIN 2
-#define MAX_SPEED 4500
+#define MAX_SPEED 3000
 #define DEAD_ZONE (MAX_SPEED / 10)
 #define ACCELERATION 30000
 
