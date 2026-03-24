@@ -1,29 +1,19 @@
 #include "Arduino.h"
 #include "Wire.h"
 #include "TM1637Display.h"
-TM1637Display display(3, 2); // CLK, DIO
 #include "SerialTransfer.h"
+#include "message.h"
+#include "actionneurs.h"
 
+TM1637Display display(3, 2); // CLK, DIO
 SerialTransfer transfer;
+STRUCT message = {};
+
 uint8_t buttonState;
 uint8_t buttonState2;
-
 bool buttonSeqPrevUp;
 bool buttonSeqPrevDown;
 
-struct __attribute__((packed)) STRUCT
-{
-  int16_t x;
-  int16_t y;
-  int16_t z;
-  // Vannes: 0-3
-  // Pompes: 4-7
-  // Servo bras: 8-11
-  // Servo tapis: 11-15
-  uint16_t compteur[32]; 
-} message = {};
-
-int16_t compteur = 0;
 int16_t afficheur = 0;
 int16_t afficheurPrev = 1;
 
@@ -32,68 +22,14 @@ uint8_t retournerNoisettes = 0; // 4 bits: pin13=bit3, pin12=bit2, pin5=bit1, pi
 unsigned long lastSendTime = 0;
 const unsigned long SEND_INTERVAL = 50;
 
-unsigned long vannesOffTime = 0;
-bool vannesTimerActive = false;
-const unsigned long VANNES_DELAY = 1000;
+unsigned long seq1TimerStart = 0;
+bool seq1TimerActive = false;
+const unsigned long SEQ1_AUTO_DELAY = 1000;
 
 const uint8_t NUM_STATES = 3;
 const uint8_t NUM_STATES_2 = 3;
 
 // #define DEBUG
-
-void vannesOn()
-{
-  message.compteur[0] = 4095;
-  message.compteur[1] = 4095;
-  message.compteur[2] = 4095;
-  message.compteur[3] = 4095;
-}
-
-void vannesOff()
-{
-  message.compteur[0] = 0;
-  message.compteur[1] = 0;
-  message.compteur[2] = 0;
-  message.compteur[3] = 0;
-}
-
-void pompesOn()
-{
-  message.compteur[4] = 4095;
-  message.compteur[5] = 4095;
-  message.compteur[6] = 4095;
-  message.compteur[7] = 4095;
-}
-
-void pompesOff()
-{
-  message.compteur[4] = 0;
-  message.compteur[5] = 0;
-  message.compteur[6] = 0;
-  message.compteur[7] = 0;
-  // Ouvrir les vannes et demarrer le timer de 1s
-  vannesOn();
-  vannesTimerActive = true;
-  vannesOffTime = millis();
-}
-
-void bras2cmAuDessus()
-{
-  setBras(450, 450, 460, 480);
-}
-
-void brasAccroche()
-{
-  setBras(495, 500, 500, 520);
-}
-
-void setBras(uint16_t b0, uint16_t b1, uint16_t b2, uint16_t b3)
-{
-  message.compteur[8] = b0;
-  message.compteur[9] = b1;
-  message.compteur[10] = b2;
-  message.compteur[11] = b3;
-}
 
 void setup()
 {
@@ -132,13 +68,24 @@ void loop()
   message.y = map(analogRead(A2), 0, 1023, 1023, 0);
   message.z = analogRead(A0);
 
-
   bool btn8 = (digitalRead(8) == LOW);
   if (btn8 && !buttonSeqPrevUp)
   {
     buttonState = (buttonState + 1) % NUM_STATES;
+    if (buttonState == 1)
+    {
+      seq1TimerActive = true;
+      seq1TimerStart = millis();
+    }
   }
   buttonSeqPrevUp = btn8;
+
+  // Auto-transition de state 1 vers 2 apres 1s
+  if (seq1TimerActive && buttonState == 1 && (millis() - seq1TimerStart >= SEQ1_AUTO_DELAY))
+  {
+    buttonState = 2;
+    seq1TimerActive = false;
+  }
 
   bool btn9 = (digitalRead(9) == LOW);
   if (btn9 && !buttonSeqPrevDown)
@@ -179,11 +126,7 @@ void loop()
   }
 
   // Fermer les vannes 1s apres pompesOff()
-  if (vannesTimerActive && (millis() - vannesOffTime >= VANNES_DELAY))
-  {
-    vannesOff();
-    vannesTimerActive = false;
-  }
+  updateVannesTimer();
 
   // Lecture des 4 switchs noisettes (LOW = actif car INPUT_PULLUP)
   retournerNoisettes = 0;
