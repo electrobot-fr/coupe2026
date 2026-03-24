@@ -29,14 +29,10 @@ const unsigned long SEQ1_AUTO_DELAY = 1000;
 const uint8_t NUM_STATES = 3;
 const uint8_t NUM_STATES_2 = 3;
 
-// #define DEBUG
-
 void setup()
 {
   Serial.begin(115200);
-#ifndef DEBUG
   transfer.begin(Serial);
-#endif
 
   buttonState = 0;
   buttonState2 = 0;
@@ -139,11 +135,16 @@ void loop()
 
   if (afficheur != afficheurPrev)
   {
-    display.showNumberDec(afficheur);
+    // Affiche les 4 bits sur les 4 digits du TM1637
+    uint8_t digits[4];
+    digits[0] = (afficheur >> 3) & 1;
+    digits[1] = (afficheur >> 2) & 1;
+    digits[2] = (afficheur >> 1) & 1;
+    digits[3] = afficheur & 1;
+    display.showNumberDecEx(digits[0] * 1000 + digits[1] * 100 + digits[2] * 10 + digits[3], 0, true);
   }
   afficheurPrev = afficheur;
 
-#ifndef DEBUG
   unsigned long now = millis();
   if (now - lastSendTime >= SEND_INTERVAL)
   {
@@ -152,5 +153,4 @@ void loop()
     sendSize = transfer.txObj(message, sendSize);
     transfer.sendData(sendSize);
   }
-#endif
 }
