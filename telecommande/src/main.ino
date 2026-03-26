@@ -19,6 +19,9 @@ int16_t afficheurPrev = 1;
 
 uint8_t retournerNoisettes = 0; // 4 bits: pin13=bit3, pin12=bit2, pin5=bit1, pin4=bit0
 bool noisettePrev[4] = {false, false, false, false};
+bool noisettePressed = false;
+unsigned long noisetteDisplayTime = 0;
+const unsigned long NOISETTE_DISPLAY_DURATION = 2000;
 
 unsigned long lastSendTime = 0;
 const unsigned long SEND_INTERVAL = 50;
@@ -157,23 +160,34 @@ void loop()
     if (pressed && !noisettePrev[i])
     {
       retournerNoisettes ^= noisetteBits[i];
+      noisettePressed = true;
+      noisetteDisplayTime = millis();
     }
     noisettePrev[i] = pressed;
   }
 
-  afficheur = retournerNoisettes;
-  // afficheur = buttonState;
-
-  if (afficheur != afficheurPrev)
+  // Affiche retournerNoisettes en binaire pendant 2s apres un appui noisette, sinon buttonState
+  if (noisettePressed && (millis() - noisetteDisplayTime < NOISETTE_DISPLAY_DURATION))
   {
-    // Affiche les 4 bits sur les 4 digits du TM1637
-    uint8_t digits[4];
-    digits[0] = (afficheur >> 3) & 1;
-    digits[1] = (afficheur >> 2) & 1;
-    digits[2] = (afficheur >> 1) & 1;
-    digits[3] = afficheur & 1;
-    display.showNumberDecEx(digits[0] * 1000 + digits[1] * 100 + digits[2] * 10 + digits[3], 0, true);
-    // display.showNumberDec(afficheur);
+    afficheur = retournerNoisettes | 0x10; // offset pour distinguer du buttonState
+    if (afficheur != afficheurPrev)
+    {
+      uint8_t digits[4];
+      digits[0] = (retournerNoisettes >> 3) & 1;
+      digits[1] = (retournerNoisettes >> 2) & 1;
+      digits[2] = (retournerNoisettes >> 1) & 1;
+      digits[3] = retournerNoisettes & 1;
+      display.showNumberDecEx(digits[0] * 1000 + digits[1] * 100 + digits[2] * 10 + digits[3], 0, true);
+    }
+  }
+  else
+  {
+    noisettePressed = false;
+    afficheur = buttonState;
+    if (afficheur != afficheurPrev)
+    {
+      display.showNumberDec(afficheur);
+    }
   }
   afficheurPrev = afficheur;
 
