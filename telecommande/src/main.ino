@@ -30,7 +30,11 @@ unsigned long seq1TimerStart = 0;
 bool seq1TimerActive = false;
 const unsigned long SEQ1_AUTO_DELAY = 1000;
 
-const uint8_t NUM_STATES = 3;
+const uint8_t NUM_STATES = 4;
+
+unsigned long seq1Timer2Start = 0;
+bool seq1Timer2Active = false;
+const unsigned long SEQ1_AUTO_DELAY_2 = 1000;
 const uint8_t NUM_STATES_2 = 3;
 
 uint8_t prevButtonState = 255;
@@ -82,11 +86,6 @@ void loop()
     {
       lastDebounce8 = millis();
       buttonState = (buttonState + 1) % NUM_STATES;
-      if (buttonState == 1)
-      {
-        seq1TimerActive = true;
-        seq1TimerStart = millis();
-      }
     }
     buttonSeqPrevUp = btn8;
   }
@@ -96,6 +95,13 @@ void loop()
   {
     buttonState = 2;
     seq1TimerActive = false;
+  }
+
+  // Auto-transition de state 2 vers 3 apres 1s
+  if (seq1Timer2Active && buttonState == 2 && (millis() - seq1Timer2Start >= SEQ1_AUTO_DELAY_2))
+  {
+    buttonState = 3;
+    seq1Timer2Active = false;
   }
 
   bool btn9 = (digitalRead(9) == LOW);
@@ -112,35 +118,47 @@ void loop()
   // Sequence 1 (bouton 8) — uniquement sur transition
   if (buttonState != prevButtonState)
   {
-    const uint16_t bras2cm[4] = {450, 450, 460, 480};
-    const uint16_t brasAccr[4] = {495, 500, 500, 520};
-    const uint16_t *brasVals = NULL;
-
     switch (buttonState)
     {
-    case 0: // Les bras sont à 2cm, les pompes sont éteintes
+    case 0: // Les bras sont a 2cm, les pompes sont eteintes
+      seq1TimerActive = false;
+      seq1Timer2Active = false;
       retournerNoisettes = 0b1111;
-      brasVals = bras2cm;
+      bras2cmAuDessus();
+      setTapis(0, 0, 0, 0);
       pompesOff();
       break;
-    case 1: // Les bras sont accrochés, les pompes sont allumées
+    case 1: // Les bras sont accroches, les pompes sont allumees
+      seq1TimerActive = true;
+      seq1TimerStart = millis();
       pompesOn();
-      brasVals = brasAccr;
+      brasAccroche();
       break;
-    case 2: // Les bras sont montés
-      brasVals = bras2cm;
-      break;
-    }
-
-    if (brasVals)
-    {
+    case 2: // Les bras montent: retournerNoisettes=1 -> bras2cm, =0 -> brasRetourne + tapis
+      seq1Timer2Active = true;
+      seq1Timer2Start = millis();
       for (uint8_t i = 0; i < 4; i++)
       {
         if (retournerNoisettes & (1 << i))
         {
-          message.compteur[8 + i] = brasVals[i];
+          setBrasIndex(i, BRAS_2CM[i]);
+        }
+        else
+        {
+          setBrasIndex(i, BRAS_RETOURNE[i]);
+          setTapisIndex(i, 400);
         }
       }
+      break;
+    case 3: // Pompes off pour les noisettes retournees, vannes on 1s
+      for (uint8_t i = 0; i < 4; i++)
+      {
+        if (!(retournerNoisettes & (1 << i)))
+        {
+          pompeOffAvecVanne(i);
+        }
+      }
+      break;
     }
     prevButtonState = buttonState;
   }
@@ -164,10 +182,11 @@ void loop()
     prevButtonState2 = buttonState2;
   }
 
-  // Fermer les vannes 1s apres pompesOff()
+  // Timers vannes
   updateVannesTimer();
+  updateVannesIndivTimer();
 
-  // Lecture des 4 boutons noisettes en toggle (poussoir → levier)
+  // Lecture des 4 boutons noisettes en toggle (poussoir -> levier)
   const uint8_t noisettePins[4] = {13, 12, 5, 4};
   const uint8_t noisetteBits[4] = {0b1000, 0b0100, 0b0010, 0b0001};
   for (uint8_t i = 0; i < 4; i++)
