@@ -18,6 +18,7 @@ int16_t afficheur = 0;
 int16_t afficheurPrev = 1;
 
 uint8_t retournerNoisettes = 0; // 4 bits: pin13=bit3, pin12=bit2, pin5=bit1, pin4=bit0
+bool noisettePrev[4] = {false, false, false, false};
 
 unsigned long lastSendTime = 0;
 const unsigned long SEND_INTERVAL = 50;
@@ -28,6 +29,13 @@ const unsigned long SEQ1_AUTO_DELAY = 1000;
 
 const uint8_t NUM_STATES = 3;
 const uint8_t NUM_STATES_2 = 3;
+
+uint8_t prevButtonState = 255;
+uint8_t prevButtonState2 = 255;
+
+const unsigned long DEBOUNCE_DELAY = 50;
+unsigned long lastDebounce8 = 0;
+unsigned long lastDebounce9 = 0;
 
 void setup()
 {
@@ -65,16 +73,20 @@ void loop()
   message.z = analogRead(A0);
 
   bool btn8 = (digitalRead(8) == LOW);
-  if (btn8 && !buttonSeqPrevUp)
+  if (millis() - lastDebounce8 >= DEBOUNCE_DELAY)
   {
-    buttonState = (buttonState + 1) % NUM_STATES;
-    if (buttonState == 1)
+    if (btn8 && !buttonSeqPrevUp)
     {
-      seq1TimerActive = true;
-      seq1TimerStart = millis();
+      lastDebounce8 = millis();
+      buttonState = (buttonState + 1) % NUM_STATES;
+      if (buttonState == 1)
+      {
+        seq1TimerActive = true;
+        seq1TimerStart = millis();
+      }
     }
+    buttonSeqPrevUp = btn8;
   }
-  buttonSeqPrevUp = btn8;
 
   // Auto-transition de state 1 vers 2 apres 1s
   if (seq1TimerActive && buttonState == 1 && (millis() - seq1TimerStart >= SEQ1_AUTO_DELAY))
@@ -84,54 +96,73 @@ void loop()
   }
 
   bool btn9 = (digitalRead(9) == LOW);
-  if (btn9 && !buttonSeqPrevDown)
+  if (millis() - lastDebounce9 >= DEBOUNCE_DELAY)
   {
-    buttonState2 = (buttonState2 + 1) % NUM_STATES_2;
-  }
-  buttonSeqPrevDown = btn9;
-
-  // Sequence 1 (bouton 8)
-  switch (buttonState)
-  {
-  case 0:
-    bras2cmAuDessus();
-    pompesOff();
-    break;
-  case 1:
-    pompesOn();
-    brasAccroche();
-    break;
-  case 2:
-    bras2cmAuDessus();
-    break;
+    if (btn9 && !buttonSeqPrevDown)
+    {
+      lastDebounce9 = millis();
+      buttonState2 = (buttonState2 + 1) % NUM_STATES_2;
+    }
+    buttonSeqPrevDown = btn9;
   }
 
-  // Sequence 2 (bouton 9)
-  switch (buttonState2)
+  // Sequence 1 (bouton 8) — uniquement sur transition
+  if (buttonState != prevButtonState)
   {
-  case 0:
-    bras2cmAuDessus();
-    pompesOff();
-    break;
-  case 1:
-    // TODO: mouvement 1 sequence 2
-    break;
-  case 2:
-    // TODO: mouvement 2 sequence 2
-    break;
+    switch (buttonState)
+    {
+    case 0:
+      bras2cmAuDessus();
+      pompesOff();
+      break;
+    case 1:
+      pompesOn();
+      brasAccroche();
+      break;
+    case 2:
+      bras2cmAuDessus();
+      break;
+    }
+    prevButtonState = buttonState;
+  }
+
+  // Sequence 2 (bouton 9) — uniquement sur transition
+  if (buttonState2 != prevButtonState2)
+  {
+    switch (buttonState2)
+    {
+    case 0:
+      bras2cmAuDessus();
+      pompesOff();
+      break;
+    case 1:
+      // TODO: mouvement 1 sequence 2
+      break;
+    case 2:
+      // TODO: mouvement 2 sequence 2
+      break;
+    }
+    prevButtonState2 = buttonState2;
   }
 
   // Fermer les vannes 1s apres pompesOff()
   updateVannesTimer();
 
-  // Lecture des 4 switchs noisettes (LOW = actif car INPUT_PULLUP)
-  retournerNoisettes = 0;
-  if (digitalRead(13) == LOW) retournerNoisettes |= 0b1000;
-  if (digitalRead(12) == LOW) retournerNoisettes |= 0b0100;
-  if (digitalRead(5) == LOW)  retournerNoisettes |= 0b0010;
-  if (digitalRead(4) == LOW)  retournerNoisettes |= 0b0001;
+  // Lecture des 4 boutons noisettes en toggle (poussoir → levier)
+  const uint8_t noisettePins[4] = {13, 12, 5, 4};
+  const uint8_t noisetteBits[4] = {0b1000, 0b0100, 0b0010, 0b0001};
+  for (uint8_t i = 0; i < 4; i++)
+  {
+    bool pressed = (digitalRead(noisettePins[i]) == LOW);
+    if (pressed && !noisettePrev[i])
+    {
+      retournerNoisettes ^= noisetteBits[i];
+    }
+    noisettePrev[i] = pressed;
+  }
 
   afficheur = retournerNoisettes;
+  // afficheur = buttonState;
 
   if (afficheur != afficheurPrev)
   {
@@ -142,6 +173,7 @@ void loop()
     digits[2] = (afficheur >> 1) & 1;
     digits[3] = afficheur & 1;
     display.showNumberDecEx(digits[0] * 1000 + digits[1] * 100 + digits[2] * 10 + digits[3], 0, true);
+    // display.showNumberDec(afficheur);
   }
   afficheurPrev = afficheur;
 
