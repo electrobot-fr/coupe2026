@@ -17,7 +17,7 @@ bool buttonSeqPrevDown;
 int16_t afficheur = 0;
 int16_t afficheurPrev = 1;
 
-uint8_t retournerNoisettes = 0; // 4 bits: pin13=bit3, pin12=bit2, pin5=bit1, pin4=bit0
+uint8_t retournerNoisettes = 0b1111; // 4 bits: pin13=bit3, pin12=bit2, pin5=bit1, pin4=bit0
 bool noisettePrev[4] = {false, false, false, false};
 bool noisettePressed = false;
 unsigned long noisetteDisplayTime = 0;
@@ -112,19 +112,35 @@ void loop()
   // Sequence 1 (bouton 8) — uniquement sur transition
   if (buttonState != prevButtonState)
   {
+    const uint16_t bras2cm[4] = {450, 450, 460, 480};
+    const uint16_t brasAccr[4] = {495, 500, 500, 520};
+    const uint16_t *brasVals = NULL;
+
     switch (buttonState)
     {
-    case 0:
-      bras2cmAuDessus();
+    case 0: // Les bras sont à 2cm, les pompes sont éteintes
+      retournerNoisettes = 0b1111;
+      brasVals = bras2cm;
       pompesOff();
       break;
-    case 1:
+    case 1: // Les bras sont accrochés, les pompes sont allumées
       pompesOn();
-      brasAccroche();
+      brasVals = brasAccr;
       break;
-    case 2:
-      bras2cmAuDessus();
+    case 2: // Les bras sont montés
+      brasVals = bras2cm;
       break;
+    }
+
+    if (brasVals)
+    {
+      for (uint8_t i = 0; i < 4; i++)
+      {
+        if (retournerNoisettes & (1 << i))
+        {
+          message.compteur[8 + i] = brasVals[i];
+        }
+      }
     }
     prevButtonState = buttonState;
   }
