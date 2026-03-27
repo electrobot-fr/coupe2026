@@ -43,6 +43,7 @@ uint8_t prevButtonState2 = 255;
 const unsigned long DEBOUNCE_DELAY = 50;
 unsigned long lastDebounce8 = 0;
 unsigned long lastDebounce9 = 0;
+unsigned long lastDebounceNoisette[4] = {0, 0, 0, 0};
 
 void setup()
 {
@@ -87,8 +88,8 @@ void loop()
       lastDebounce8 = millis();
       buttonState = (buttonState + 1) % NUM_STATES;
     }
-    buttonSeqPrevUp = btn8;
   }
+  buttonSeqPrevUp = btn8;
 
   // Auto-transition de state 1 vers 2 apres 1s
   if (seq1TimerActive && buttonState == 1 && (millis() - seq1TimerStart >= SEQ1_AUTO_DELAY))
@@ -112,8 +113,8 @@ void loop()
       lastDebounce9 = millis();
       buttonState2 = (buttonState2 + 1) % NUM_STATES_2;
     }
-    buttonSeqPrevDown = btn9;
   }
+  buttonSeqPrevDown = btn9;
 
   // Sequence 1 (bouton 8) — uniquement sur transition
   if (buttonState != prevButtonState)
@@ -192,11 +193,15 @@ void loop()
   for (uint8_t i = 0; i < 4; i++)
   {
     bool pressed = (digitalRead(noisettePins[i]) == LOW);
-    if (pressed && !noisettePrev[i])
+    if (millis() - lastDebounceNoisette[i] >= DEBOUNCE_DELAY)
     {
-      retournerNoisettes ^= noisetteBits[i];
-      noisettePressed = true;
-      noisetteDisplayTime = millis();
+      if (pressed && !noisettePrev[i])
+      {
+        lastDebounceNoisette[i] = millis();
+        retournerNoisettes ^= noisetteBits[i];
+        noisettePressed = true;
+        noisetteDisplayTime = millis();
+      }
     }
     noisettePrev[i] = pressed;
   }
