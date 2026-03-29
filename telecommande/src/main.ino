@@ -86,7 +86,10 @@ void loop()
     if (btn8 && !buttonSeqPrevUp)
     {
       lastDebounce8 = millis();
-      buttonState = (buttonState + 1) % NUM_STATES;
+      if (buttonState != 1)
+      {
+        buttonState = (buttonState + 1) % NUM_STATES;
+      }
     }
   }
   buttonSeqPrevUp = btn8;
@@ -201,6 +204,10 @@ void loop()
         retournerNoisettes ^= noisetteBits[i];
         noisettePressed = true;
         noisetteDisplayTime = millis();
+        if (buttonState == 3)
+        {
+          buttonState = 2;
+        }
       }
     }
     noisettePrev[i] = pressed;
