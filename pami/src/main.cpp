@@ -256,20 +256,21 @@ void loop() {
          { // Equipe BLEU
             
             // Séquence de mouvements
-            avancer(1000);        // Avance de 10cm
+            // 10 000 = 123cm, PAMI 1: 6097,m PAMI 2: 13089, PAMI 3: 9593
+            avancer(9512);        // Avance de 10cm
             delay(10);
             
-            tourner_droite(600);  // Tourne à droite 
-            delay(10);
+            //tourner_droite(600);  // Tourne à droite 
+            //delay(10);
 
-            avancer(5000);        // Avance de 50cm
-            delay(10);
+            // avancer(5000);        // Avance de 50cm
+            // delay(10);
 
-            tourner_gauche(600);  // Tourne à gauche 
-            delay(10);
+            // tourner_gauche(600);  // Tourne à gauche 
+            // delay(10);
 
-            avancer(6000);        // Avance de 50cm
-            delay(10);
+            // avancer(6000);        // Avance de 50cm
+            // delay(10);
 
         
          } else // Equipe JAUNE
