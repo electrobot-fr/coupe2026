@@ -9,7 +9,7 @@ struct __attribute__((packed)) STRUCT
   // Vannes: 0-3
   // Pompes: 4-7
   // Servo bras: 8-11
-  // Servo tapis: 11-15
+  // Servo tapis: 12-15
   uint16_t compteur[32];
 };
 
