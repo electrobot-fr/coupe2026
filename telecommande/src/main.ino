@@ -1,5 +1,4 @@
 #include "Arduino.h"
-#include "Wire.h"
 #include "TM1637Display.h"
 #include "SerialTransfer.h"
 #include "message.h"
@@ -116,9 +115,10 @@ void loop()
       resetAll(now);
   }
 
-  // Boutons noisettes: retourner uniquement depuis N_HOLDING
+  // Noisettes: boutons + state machine
   for (uint8_t i = 0; i < 4; i++)
   {
+    // Bouton noisette i → retourne hw = 3-i
     if (debounceRising(noisettePins[i], noisettePrev[i], lastDebounceNoisette[i], now))
     {
       uint8_t hw = 3 - i;
@@ -130,11 +130,8 @@ void loop()
         noisetteTimer[hw] = now;
       }
     }
-  }
 
-  // State machine noisettes
-  for (uint8_t i = 0; i < 4; i++)
-  {
+    // State machine
     switch (noisetteState[i])
     {
     case N_ACCROCHE:
