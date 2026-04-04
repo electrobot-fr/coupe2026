@@ -23,6 +23,14 @@ bool noisettePressed = false;
 unsigned long noisetteDisplayTime = 0;
 const unsigned long NOISETTE_DISPLAY_DURATION = 2000;
 
+// State machine individuelle par bouton noisette
+enum NoisetteState : uint8_t { N_IDLE, N_BRAS_MOVING, N_POMPE_OFF, N_VANNE_OPEN };
+NoisetteState noisetteState[4] = {N_IDLE, N_IDLE, N_IDLE, N_IDLE};
+unsigned long noisetteTimer[4] = {0, 0, 0, 0};
+const unsigned long NOISETTE_BRAS_DELAY = 1000;   // temps pour le servo
+const unsigned long NOISETTE_POMPE_DELAY = 200;    // delai pompe off avant vanne
+const unsigned long NOISETTE_VANNE_DELAY = 2000;   // temps vanne ouverte
+
 unsigned long lastSendTime = 0;
 const unsigned long SEND_INTERVAL = 50;
 
@@ -143,6 +151,7 @@ void loop()
       seq1TimerActive = false;
       seq1Timer2Active = false;
       retournerNoisettes = 0b1111;
+      for (uint8_t i = 0; i < 4; i++) noisetteState[i] = N_IDLE;
       bras2cmAuDessus();
       setTapis(0, 0, 0, 0);
       pompesOff();
@@ -169,12 +178,14 @@ void loop()
         }
       }
       break;
-    case 3: // Pompes off pour les noisettes retournees, vannes on 1s
+    case 3: // Pompes off pour les noisettes retournees via state machine
       for (uint8_t i = 0; i < 4; i++)
       {
-        if (!(retournerNoisettes & (1 << i)))
+        if (!(retournerNoisettes & (1 << i)) && noisetteState[i] == N_IDLE)
         {
-          pompeOffAvecVanne(i);
+          // Le bras est deja en position (fait en state 2), passer direct a pompe off
+          noisetteState[i] = N_POMPE_OFF;
+          noisetteTimer[i] = millis();
         }
       }
       break;
@@ -219,40 +230,79 @@ void loop()
         retournerNoisettes ^= noisetteBits[i];
         noisettePressed = true;
         noisetteDisplayTime = millis();
-        if (buttonState == 3)
+        // Si en state 3 et on vient de marquer "retourner", lancer la state machine
         {
-          // Repasse en state 2 pour bouger les servos, puis auto-transition vers 3
-          buttonState = 2;
-          prevButtonState = 255; // Force la transition pour exécuter le case 2
-          seq1Timer2Active = true;
-          seq1Timer2Start = millis();
+          uint8_t hw = 3 - i; // bouton i -> hardware 3-i
+          if (buttonState == 3 && !(retournerNoisettes & noisetteBits[i]) && noisetteState[hw] == N_IDLE)
+          {
+            setBrasIndex(hw, BRAS_RETOURNE[hw]);
+            setTapisIndex(hw, 400);
+            noisetteState[hw] = N_BRAS_MOVING;
+            noisetteTimer[hw] = millis();
+          }
         }
       }
     }
     noisettePrev[i] = pressed;
   }
 
-  // Affiche retournerNoisettes en binaire pendant 2s apres un appui noisette, sinon buttonState
-  if (noisettePressed && (millis() - noisetteDisplayTime < NOISETTE_DISPLAY_DURATION))
+  // State machine individuelle par noisette
+  for (uint8_t i = 0; i < 4; i++)
   {
-    afficheur = retournerNoisettes | 0x10; // offset pour distinguer du buttonState
-    if (afficheur != afficheurPrev)
+    switch (noisetteState[i])
     {
-      uint8_t digits[4];
-      digits[0] = (retournerNoisettes >> 3) & 1;
-      digits[1] = (retournerNoisettes >> 2) & 1;
-      digits[2] = (retournerNoisettes >> 1) & 1;
-      digits[3] = retournerNoisettes & 1;
-      display.showNumberDecEx(digits[0] * 1000 + digits[1] * 100 + digits[2] * 10 + digits[3], 0, true);
+    case N_BRAS_MOVING:
+      if (millis() - noisetteTimer[i] >= NOISETTE_BRAS_DELAY)
+      {
+        pompeOff(i);
+        noisetteState[i] = N_POMPE_OFF;
+        noisetteTimer[i] = millis();
+      }
+      break;
+    case N_POMPE_OFF:
+      if (millis() - noisetteTimer[i] >= NOISETTE_POMPE_DELAY)
+      {
+        vanneOn(i);
+        noisetteState[i] = N_VANNE_OPEN;
+        noisetteTimer[i] = millis();
+      }
+      break;
+    case N_VANNE_OPEN:
+      if (millis() - noisetteTimer[i] >= NOISETTE_VANNE_DELAY)
+      {
+        vanneOff(i);
+        noisetteState[i] = N_IDLE;
+      }
+      break;
+    default:
+      break;
     }
   }
-  else
+
+  // Affiche noisetteState sur les 4 digits (0=IDLE, 1=BRAS, 2=VANNE)
+  // Sinon affiche buttonState quand toutes les noisettes sont IDLE
   {
-    noisettePressed = false;
-    afficheur = buttonState;
-    if (afficheur != afficheurPrev)
+    bool anyActive = false;
+    for (uint8_t i = 0; i < 4; i++)
     {
-      display.showNumberDec(afficheur);
+      if (noisetteState[i] != N_IDLE) { anyActive = true; break; }
+    }
+    if (anyActive || (noisettePressed && (millis() - noisetteDisplayTime < NOISETTE_DISPLAY_DURATION)))
+    {
+      afficheur = (int16_t)(noisetteState[0] * 1000 + noisetteState[1] * 100 + noisetteState[2] * 10 + noisetteState[3]) | 0x1000;
+      if (afficheur != afficheurPrev)
+      {
+        display.showNumberDecEx(noisetteState[0] * 1000 + noisetteState[1] * 100 + noisetteState[2] * 10 + noisetteState[3], 0, true);
+      }
+    }
+    else
+    {
+      noisettePressed = false;
+      afficheur = buttonState;
+      if (afficheur != afficheurPrev)
+      {
+        display.showNumberDec(afficheur);
+      }
     }
   }
   afficheurPrev = afficheur;
