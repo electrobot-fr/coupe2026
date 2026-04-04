@@ -172,6 +172,8 @@ void setup() {
    afficher_attente();
 }
 
+#define PAMI2
+
 void loop() {
 
     if (!started) {
@@ -202,6 +204,7 @@ void loop() {
 
     // Séquence de mouvements (exécutée une seule fois)
     if (!mouvement_termine) {
+#ifdef PAMI1
         if (equipe == BLEU) {
             // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
             avancer(3000);
@@ -220,6 +223,27 @@ void loop() {
                 tourner_gauche(250);
             avancer(5000);
         }
+#endif
+#ifdef PAMI2
+        if (equipe == BLEU) {
+            // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
+            avancer(3000);
+            delay(10);
+                tourner_droite(200);
+            avancer(9512);
+            delay(10);
+                tourner_droite(250);
+            avancer(5000);
+        } else {
+            avancer(3000);
+            delay(10);
+                tourner_gauche(200);
+            avancer(9512);
+            delay(10);
+                tourner_gauche(250);
+            avancer(5000);
+        }
+#endif
 
         mouvement_termine = true;
     }
