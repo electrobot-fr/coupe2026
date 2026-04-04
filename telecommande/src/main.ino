@@ -219,7 +219,7 @@ void loop()
   // Lecture des 4 boutons noisettes en toggle (poussoir -> levier)
   const uint8_t noisettePins[4] = {13, 12, 5, 4};
   const uint8_t noisetteBits[4] = {0b1000, 0b0100, 0b0010, 0b0001};
-  for (uint8_t i = 1; i < 4; i++) // bouton 0 (pin 13) desactive
+  for (uint8_t i = 0; i < 4; i++)
   {
     bool pressed = (digitalRead(noisettePins[i]) == LOW);
     if (millis() - lastDebounceNoisette[i] >= DEBOUNCE_DELAY)
