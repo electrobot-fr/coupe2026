@@ -7,14 +7,11 @@ extern const uint16_t BRAS_ACCROCHE[4];
 extern const uint16_t BRAS_RETOURNE[4];
 
 // Vannes (indices 0-3)
-void vannesOn();
-void vannesOff();
 void vanneOn(uint8_t i);
 void vanneOff(uint8_t i);
 
 // Pompes (indices 4-7)
 void pompesOn();
-void pompesOff();
 void pompeOn(uint8_t i);
 void pompeOff(uint8_t i);
 
@@ -30,7 +27,3 @@ void setTapisIndex(uint8_t i, uint16_t val);
 void tapisEnAvant();
 void tapisEnArriere();
 
-// Timers vannes
-void updateVannesTimer();
-void pompeOffAvecVanne(uint8_t i);
-void updateVannesIndivTimer();
