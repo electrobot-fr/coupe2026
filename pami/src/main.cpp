@@ -17,117 +17,111 @@
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
-// Lettre à afficher à gauche
-char lettreGauche = 'B'; // peut être 'J' équipe Jaune ou 'B' équipe Bleu
-
-
 // tirette
 #define PIN_START 10      // GPIO 10 utilisé pour la tirette
 
 // Servos
 #define PIN_SERVO1 6      // Servo sur GPIO6
-Servo servo1; 
+Servo servo1;
 
 // stepper motors : Droite stepperD, gauche stepperG
-AccelStepper stepperG(1, 1, 2);  // Defaults to AccelStepper::FULL4WIRE (4 pins) 
-AccelStepper stepperD(1, 3, 4); // Defaults to AccelStepper::FULL4WIRE (4 pins)
+AccelStepper stepperG(1, 1, 2);  // DRIVER mode (step, dir)
+AccelStepper stepperD(1, 3, 4);  // DRIVER mode (step, dir)
 #define SPEED 6000
 #define ACCELERATION 2000
 
 // Variables globales
-bool started = false; // Indique si le robot a démarré
-bool decompte_termine = false; // Indique si le décompte est terminé
-bool mouvement_termine = false; // Indique si la séquence de mouvement est terminée
-
+bool started = false;
+bool decompte_termine = false;
+bool mouvement_termine = false;
 
 // Equipe
 #define PIN_EQUIPE 5      // GPIO05 (connecteur servo)
 #define JAUNE 0
 #define BLEU 1
-
+int equipe = BLEU;
+char lettreGauche = 'B';
 
 // Valeur decompte initiale
-#define DECOMPTE_INITIAL 5 // 85 secondes
+#define DECOMPTE_INITIAL 5 // secondes
 
-// Paramètres du robot à ajuster 
+// Paramètres du robot
 const float WHEEL_DIAMETER = 60.0;  // Diamètre des roues en mm
-const int STEPS_PER_REV = 200;      // Nombre de pas par tour du moteur (200 pour 1.8°, 400 pour 0.9°)
-const int MICROSTEPS = 1;            // Microstepping (1, 2, 4, 8, 16, etc.)
+const int STEPS_PER_REV = 200;      // Nombre de pas par tour du moteur (200 pour 1.8°)
+const int MICROSTEPS = 1;
 const float STEPS_PER_MM = (STEPS_PER_REV * MICROSTEPS) / (PI * WHEEL_DIAMETER);
 
-// Fonction pour avancer d'une distance en mm
-void avancer(float distance_mm) {
-    long steps = (long)(distance_mm * STEPS_PER_MM);    
-    stepperD.move(steps);
-    stepperG.move(-steps);
-    
-    // Attendre que les deux moteurs atteignent leur position
+// Attendre que les deux moteurs atteignent leur position
+void attendre_moteurs() {
     while (stepperD.distanceToGo() != 0 || stepperG.distanceToGo() != 0) {
         stepperD.run();
         stepperG.run();
     }
 }
 
-// Fonction pour tourner à droite (roue droite recule, roue gauche avance)
-void tourner_droite(float distance_mm) {
-    long steps = (long)(distance_mm * STEPS_PER_MM);   
-    stepperD.move(-steps);  // Roue droite recule
-    stepperG.move(-steps);   // Roue gauche avance
-    
-    // Attendre que les deux moteurs atteignent leur position
-    while (stepperD.distanceToGo() != 0 || stepperG.distanceToGo() != 0) {
-        stepperD.run();
-        stepperG.run();
-    }    
+// Déplacer les deux moteurs d'un nombre de steps chacun
+void deplacer(long stepsD, long stepsG) {
+    stepperD.move(stepsD);
+    stepperG.move(stepsG);
+    attendre_moteurs();
 }
 
-// Fonction pour tourner à gauche (roue droite avance, roue gauche recule)
+void avancer(float distance_mm) {
+    long steps = (long)(distance_mm * STEPS_PER_MM);
+    deplacer(steps, -steps);
+}
+
+void tourner_droite(float distance_mm) {
+    long steps = (long)(distance_mm * STEPS_PER_MM);
+    deplacer(-steps, -steps);
+}
+
 void tourner_gauche(float distance_mm) {
     long steps = (long)(distance_mm * STEPS_PER_MM);
-    stepperD.move(steps);   // Roue droite avance
-    stepperG.move(steps);   // Roue gauche recule
-    
-    // Attendre que les deux moteurs atteignent leur position
-    while (stepperD.distanceToGo() != 0 || stepperG.distanceToGo() != 0) {
-        stepperD.run();
-        stepperG.run();
-    }
+    deplacer(steps, steps);
 }
 
-// Fonction de décompte de 85 secondes avec affichage OLED
+// Afficher l'écran d'attente tirette
+void afficher_attente() {
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+
+    display.setTextSize(4);
+    display.setCursor(2, 0);
+    display.print(lettreGauche);
+
+    display.setTextSize(1);
+    display.setCursor(0, 24);
+    display.print("Tirette en place !");
+
+    display.display();
+}
+
+// Fonction de décompte avec affichage OLED
 void decompte(int decompte_initial = DECOMPTE_INITIAL) {
     for (int i = decompte_initial; i >= 0; i--) {
         display.clearDisplay();
-        
-        // === Afficher la lettre à gauche ===
+
+        // Afficher la lettre à gauche
         display.setTextColor(SSD1306_WHITE);
-        display.setTextSize(4);  
-        int16_t lettreX = 2;
-        int16_t lettreY = (SCREEN_HEIGHT - 8*4)/2; // centré verticalement
-        display.setCursor(lettreX, lettreY);
+        display.setTextSize(4);
+        display.setCursor(2, (SCREEN_HEIGHT - 8*4)/2);
         display.print(lettreGauche);
 
-        // === Définir taille du texte du compteur selon nombre de chiffres ===
-        int textSize = 4;
-        if (i >= 100) textSize = 3;
-        else if (i >= 10) textSize = 4;
-        else textSize = 5;
-
+        // Taille du texte du compteur selon nombre de chiffres
+        int textSize = (i >= 100) ? 3 : (i >= 10) ? 4 : 5;
         display.setTextSize(textSize);
 
-        // Calcul largeur du texte
         int nbChiffres = (i < 10 ? 1 : (i < 100 ? 2 : 3));
         int largeurTexte = 6 * textSize * nbChiffres;
         int hauteurTexte = 8 * textSize;
 
-        // Centrage horizontal du compteur avec espace pour la lettre
-        int16_t espaceLettre = 20; // espace réservé pour la lettre à gauche
+        int16_t espaceLettre = 20;
         int16_t compteurX = (SCREEN_WIDTH - largeurTexte + espaceLettre)/2 + espaceLettre;
         int16_t compteurY = (SCREEN_HEIGHT - hauteurTexte)/2;
 
         display.setCursor(compteurX, compteurY);
         display.print(i);
-
         display.display();
 
         Serial.print("Décompte : ");
@@ -135,46 +129,38 @@ void decompte(int decompte_initial = DECOMPTE_INITIAL) {
         delay(1000);
     }
 
-    // Fin du décompte
     display.clearDisplay();
     display.setTextSize(2);
     display.setCursor(10, 10);
     display.print("GO !");
     display.display();
-    
+
     Serial.println("Décompte terminé ! Début des mouvements.");
     decompte_termine = true;
 }
-
-
-
 
 void setup() {
     Serial.begin(115200);
 
     // Tirette
-    pinMode(PIN_START, INPUT_PULLUP); // Utiliser une résistance de pull-up interne
-    
+    pinMode(PIN_START, INPUT_PULLUP);
+
     // Equipe
-    pinMode(PIN_EQUIPE, INPUT_PULLUP); // Utiliser une résistance de pull-up interne
-    // par défaut à 1 donc équipe Bleu
+    pinMode(PIN_EQUIPE, INPUT_PULLUP);
 
     // Servo
     servo1.attach(PIN_SERVO1);
-    servo1.write(0);  // Position neutre initiale
-
+    servo1.write(0);
 
    // Steppers
-   int speed = SPEED;
-   int acceleration = ACCELERATION;
    pinMode(0, OUTPUT);
    digitalWrite(0, LOW);
-   stepperD.setMaxSpeed(speed);
-   stepperD.setSpeed(speed);
-   stepperD.setAcceleration(acceleration);  // Accélération pour la fonction avancer()
-   stepperG.setMaxSpeed(speed);
-   stepperG.setSpeed(speed);
-   stepperG.setAcceleration(acceleration);  // Accélération pour la fonction avancer()
+   stepperD.setMaxSpeed(SPEED);
+   stepperD.setSpeed(SPEED);
+   stepperD.setAcceleration(ACCELERATION);
+   stepperG.setMaxSpeed(SPEED);
+   stepperG.setSpeed(SPEED);
+   stepperG.setAcceleration(ACCELERATION);
 
    // Display OLED
    Wire.begin(8, 9); // SDA=8, SCL=9
@@ -182,127 +168,59 @@ void setup() {
      Serial.println(F("Erreur : OLED non détecté"));
      for (;;);
    }
-   
-   // Affichage initial : lettre et message d'attente
-   display.clearDisplay();
-   display.setTextColor(SSD1306_WHITE);
-   
-   // Afficher la lettre en haut à gauche
-   display.setTextSize(4);
-   display.setCursor(2, 0);
-   display.print(lettreGauche);
-   
-   // Afficher "tirette en place !"
-   display.setTextSize(1);
-   display.setCursor(0, 24);
-   display.print("Tirette en place !");
-   
-   display.display();
 
+   afficher_attente();
 }
 
 void loop() {
 
-    // attendre tant que la tirette n'est pas retirée
-    int startSignal = digitalRead(PIN_START);
-
-    // détermination équipe et affichage
-    int equipe = digitalRead(PIN_EQUIPE);
-    if (equipe == LOW) {
-        equipe = JAUNE;
-        lettreGauche = 'J';
-    } else {
-        equipe = BLEU;
-        lettreGauche = 'B';
-    }
-    
     if (!started) {
-        if (startSignal == LOW) {
-            // "Tirette retirée ! Démarrage du décompte...
+        // Lire l'équipe tant qu'on n'a pas démarré
+        if (digitalRead(PIN_EQUIPE) == LOW) {
+            equipe = JAUNE;
+            lettreGauche = 'J';
+        } else {
+            equipe = BLEU;
+            lettreGauche = 'B';
+        }
+
+        if (digitalRead(PIN_START) == LOW) {
             started = true;
         } else {
-            // Afficher en continu le message d'attente
-            display.clearDisplay();
-            display.setTextColor(SSD1306_WHITE);
-            
-            // Afficher la lettre en haut à gauche
-            display.setTextSize(4);
-            display.setCursor(2, 0);
-            display.print(lettreGauche);
-            
-            // Afficher "tirette en place !"
-            display.setTextSize(1);
-            display.setCursor(0, 24);
-            display.print("Tirette en place !");
-            
-            display.display();
-            
+            afficher_attente();
             Serial.println("En attente de la tirette...");
             delay(300);
-            return;   // Tant que la tirette n'est pas retirée, on ne fait rien
+            return;
         }
     }
 
-    // Décompte de 85 secondes après retrait de la tirette
-    if (started && !decompte_termine) {
+    // Décompte après retrait de la tirette
+    if (!decompte_termine) {
         decompte(DECOMPTE_INITIAL);
         return;
     }
 
-    // Se déplacer à la destination (Les steppers - exécuté une seule fois)
-    if (decompte_termine && !mouvement_termine) {
-          
-       if (equipe == BLEU) 
-         { // Equipe BLEU
-            
-            // Séquence de mouvements
-            // 10 000 = 123cm, PAMI 1: 6097,m PAMI 2: 13089, PAMI 3: 9593
-            avancer(9512);        // Avance de 10cm
+    // Séquence de mouvements (exécutée une seule fois)
+    if (!mouvement_termine) {
+        if (equipe == BLEU) {
+            // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
+            avancer(9512);
             delay(10);
-            
-            //tourner_droite(600);  // Tourne à droite 
-            //delay(10);
-
-            // avancer(5000);        // Avance de 50cm
-            // delay(10);
-
-            // tourner_gauche(600);  // Tourne à gauche 
-            // delay(10);
-
-            // avancer(6000);        // Avance de 50cm
-            // delay(10);
-
-        
-         } else // Equipe JAUNE
-         {  
-
-            // Séquence de mouvements
-            avancer(1000);        // Avance de 10cm
+        } else {
+            avancer(1000);
             delay(500);
-            
-            tourner_gauche(600);  // Tourne à gauche 
+            tourner_gauche(600);
             delay(500);
+            avancer(5000);
+            delay(500);
+        }
 
-            avancer(5000);        // Avance de 50cm
-            delay(500);
-        
-         }
-        
         mouvement_termine = true;
-        //Séquence de mouvements terminée. Activation du servo en continu
-    }
-    
-    // mouvement_termine = true;
-    // Une fois arrivé à destination, le servo fonctionne en permanence
-    if (mouvement_termine) {
-        servo1.write(180);
-        delay(500);  
-        servo1.write(0);  
-        delay(500);
     }
 
+    // Oscillation servo en continu
+    servo1.write(180);
+    delay(500);
+    servo1.write(0);
+    delay(500);
 }
-
-
-
-
