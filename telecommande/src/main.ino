@@ -40,10 +40,25 @@ const uint8_t NUM_STATES_2 = 3;
 uint8_t prevButtonState = 255;
 uint8_t prevButtonState2 = 255;
 
-const unsigned long DEBOUNCE_DELAY = 50;
+const unsigned long DEBOUNCE_DELAY = 100;
 unsigned long lastDebounce8 = 0;
 unsigned long lastDebounce9 = 0;
 unsigned long lastDebounceNoisette[4] = {0, 0, 0, 0};
+
+// Réponse exponentielle approchée (facteur ~3) sur axe 0-1023, centre 512
+// Approximation cubique: y = x*(1 + (EXPO-1)*x^2) normalise sur [0,1]
+inline int16_t applyExpo(int16_t raw) {
+  long centered = (long)raw - 512;        // -512..+511
+  if (centered == 0) return 512;
+  long sign = (centered < 0) ? -1 : 1;
+  long a = abs(centered);                 // 0..512
+  // y/512 = (a/512) * (1 + 2*(a/512)^2) / 3  — approx expo gain=3
+  // Simplifie en entier: y = a * (512L*512L + 2*a*a) / (3 * 512L * 512L)
+  long num = a * (262144L + 2L * a * a);  // 262144 = 512*512
+  long y = num / 786432L;                 // 786432 = 3 * 512 * 512
+  if (y > 512) y = 512;
+  return (int16_t)(512 + sign * y);
+}
 
 void setup()
 {
@@ -76,9 +91,9 @@ void setup()
 
 void loop()
 {
-  message.x = analogRead(A3);
-  message.y = map(analogRead(A2), 0, 1023, 1023, 0);
-  message.z = analogRead(A0);
+  message.x = applyExpo(analogRead(A3));
+  message.y = applyExpo(map(analogRead(A2), 0, 1023, 1023, 0));
+  message.z = applyExpo(analogRead(A0));
 
   bool btn8 = (digitalRead(8) == LOW);
   if (millis() - lastDebounce8 >= DEBOUNCE_DELAY)
@@ -206,7 +221,11 @@ void loop()
         noisetteDisplayTime = millis();
         if (buttonState == 3)
         {
+          // Repasse en state 2 pour bouger les servos, puis auto-transition vers 3
           buttonState = 2;
+          prevButtonState = 255; // Force la transition pour exécuter le case 2
+          seq1Timer2Active = true;
+          seq1Timer2Start = millis();
         }
       }
     }

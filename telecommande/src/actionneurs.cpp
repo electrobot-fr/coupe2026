@@ -9,12 +9,12 @@ const uint16_t BRAS_RETOURNE[4] = {140, 140, 140, 160};
 // Timer vannes global (pompesOff → vannesOn 1s → vannesOff)
 static unsigned long vannesOffTime = 0;
 static bool vannesTimerActive = false;
-static const unsigned long VANNES_DELAY = 1000;
+static const unsigned long VANNES_DELAY = 2000;
 
 // Timers vannes individuelles
 static unsigned long vanneIndivTimer[4] = {0, 0, 0, 0};
 static bool vanneIndivActive[4] = {false, false, false, false};
-static const unsigned long VANNE_INDIV_DELAY = 1000;
+static const unsigned long VANNE_INDIV_DELAY = 2000;
 
 // --- Vannes (indices 0-3) ---
 
