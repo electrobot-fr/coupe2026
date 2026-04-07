@@ -12,11 +12,11 @@ const uint8_t noisettePins[4] = {13, 12, 5, 4};
 
 const unsigned long DEBOUNCE_DELAY = 100;
 const unsigned long SEND_INTERVAL = 50;
-const unsigned long ACCROCHE_DELAY = 1000;
-const unsigned long BRAS_UP_DELAY = 1000;
-const unsigned long RETOURNE_DELAY = 1000;
+const unsigned long ACCROCHE_DELAY = 750;
+const unsigned long BRAS_UP_DELAY = 500;
+const unsigned long RETOURNE_DELAY = 500;
 const unsigned long POMPE_OFF_DELAY = 200;
-const unsigned long VANNE_DELAY = 2000;
+const unsigned long VANNE_DELAY = 800;
 
 // Bouton i (pin) controle la noisette hw = 3-i
 enum NoisetteState : uint8_t {
@@ -78,6 +78,7 @@ void startSequence(unsigned long now) {
   sequenceActive = true;
   brasAccroche();
   for (uint8_t i = 0; i < 4; i++) {
+    vanneOff(i);
     pompeOn(i);
     noisetteState[i] = N_ACCROCHE;
     noisetteTimer[i] = now;

@@ -3,7 +3,7 @@
 
 const uint16_t BRAS_2CM[4] = {450, 450, 460, 480};
 const uint16_t BRAS_ACCROCHE[4] = {495, 500, 500, 520};
-const uint16_t BRAS_RETOURNE[4] = {140, 140, 140, 160};
+const uint16_t BRAS_RETOURNE[4] = {140-6, 140, 140-3, 160-6};
 
 static void setGroup(uint8_t base, const uint16_t vals[4])
 {
