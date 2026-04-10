@@ -43,7 +43,7 @@ int equipe = BLEU;
 char lettreGauche = 'B';
 
 // Valeur decompte initiale
-#define DECOMPTE_INITIAL 5 // secondes
+#define DECOMPTE_INITIAL 87 // secondes
 
 // Paramètres du robot
 const float WHEEL_DIAMETER = 60.0;  // Diamètre des roues en mm
@@ -172,7 +172,7 @@ void setup() {
    afficher_attente();
 }
 
-#define PAMI4
+#define PAMI1
 
 void loop() {
 
@@ -209,35 +209,35 @@ void loop() {
             // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
             avancer(2500);
             delay(10);
-                tourner_droite(200);
+                tourner_droite(170);
             avancer(8000);
             delay(10);
-                tourner_droite(190);
-            avancer(6500);
+                tourner_droite(230);
+            avancer(7000);
         } else {
             avancer(2500);
             delay(10);
-                tourner_gauche(200);
+                tourner_gauche(170);
             avancer(8000);
             delay(10);
-                tourner_gauche(190);
-            avancer(6500);
+                tourner_gauche(230);
+            avancer(7000);
         }
 #endif
 #ifdef PAMI2
         if (equipe == BLEU) {
             // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
-            delay(5000);
-            avancer(3000);
-            delay(10);
-                tourner_gauche(300);
+            delay(3000);
             avancer(6000);
+            delay(10);
+                tourner_gauche(420);
+            avancer(5000);
         } else {
-            delay(5000);
-            avancer(3000);
-            delay(10);
-                tourner_droite(300);
+            delay(3000);
             avancer(6000);
+            delay(10);
+                tourner_droite(420);
+            avancer(5000);
         }
 #endif
 #ifdef PAMI3
