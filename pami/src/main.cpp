@@ -43,7 +43,7 @@ int equipe = BLEU;
 char lettreGauche = 'B';
 
 // Valeur decompte initiale
-#define DECOMPTE_INITIAL 87 // secondes
+#define DECOMPTE_INITIAL 5 // secondes
 
 // Paramètres du robot
 const float WHEEL_DIAMETER = 60.0;  // Diamètre des roues en mm
@@ -172,8 +172,6 @@ void setup() {
    afficher_attente();
 }
 
-#define PAMI1
-
 void loop() {
 
     if (!started) {
@@ -204,24 +202,47 @@ void loop() {
 
     // Séquence de mouvements (exécutée une seule fois)
     if (!mouvement_termine) {
+
+#define PAMI1
+
 #ifdef PAMI1
         if (equipe == BLEU) {
             // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
-            avancer(2500);
-            delay(10);
-                tourner_droite(170);
-            avancer(8000);
-            delay(10);
-                tourner_droite(230);
-            avancer(7000);
+             tourner_droite(300);
+            avancer(2800);
+            // delay(10);
+               
+            // avancer(8000);
+            // delay(10);
+            //     tourner_droite(230);
+            // avancer(7000);
         } else {
-            avancer(2500);
-            delay(10);
-                tourner_gauche(170);
-            avancer(8000);
-            delay(10);
-                tourner_gauche(230);
-            avancer(7000);
+            //avancer(2500);
+            //delay(10);
+                //tourner_gauche(170);
+            //avancer(8000);
+            //delay(10);
+                //tourner_gauche(230);
+            //avancer(7000);
+            avancer(300);
+            tourner_droite(515);
+            avancer(3400);
+            delay(1000);
+            avancer(60);
+            avancer(-300);
+            //avancer(3200);
+            //delay(500);
+            //avancer(-1000);
+            //avancer(1400);
+            //avancer(-2000);
+            //delay(500);
+            //avancer(-1400);
+            //avancer(3000);
+            //tourner_gauche(515);
+            //avancer(4000);
+            
+            
+
         }
 #endif
 #ifdef PAMI2
