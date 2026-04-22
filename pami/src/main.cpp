@@ -43,7 +43,7 @@ int equipe = BLEU;
 char lettreGauche = 'B';
 
 // Valeur decompte initiale
-#define DECOMPTE_INITIAL 87 // secondes
+#define DECOMPTE_INITIAL 5 // secondes
 
 // Paramètres du robot
 const float WHEEL_DIAMETER = 60.0;  // Diamètre des roues en mm
@@ -172,7 +172,7 @@ void setup() {
    afficher_attente();
 }
 
-#define PAMI1
+#define PAMI3
 
 void loop() {
 
@@ -207,64 +207,82 @@ void loop() {
 #ifdef PAMI1
         if (equipe == BLEU) {
             // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
-            avancer(2500);
+            avancer(2400);
             delay(10);
-                tourner_droite(170);
+                tourner_droite(175);
             avancer(8000);
             delay(10);
-                tourner_droite(230);
-            avancer(7000);
+                tourner_droite(240);
+            avancer(6470);
         } else {
-            avancer(2500);
+            avancer(2400);
             delay(10);
-                tourner_gauche(170);
+                tourner_gauche(175);
             avancer(8000);
             delay(10);
-                tourner_gauche(230);
-            avancer(7000);
+                tourner_gauche(240);
+            avancer(6470);
         }
 #endif
 #ifdef PAMI2
         if (equipe == BLEU) {
             // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
             delay(3000);
-            avancer(6000);
-            delay(10);
-                tourner_gauche(420);
             avancer(5000);
+            delay(10);
+                tourner_gauche(330);
+            avancer(4700);
         } else {
             delay(3000);
-            avancer(6000);
-            delay(10);
-                tourner_droite(420);
             avancer(5000);
+            delay(10);
+                tourner_droite(330);
+            avancer(4700);
         }
 #endif
 #ifdef PAMI3
         if (equipe == BLEU) {
             // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
-            avancer(3000);
+            delay(2000);
+            avancer(1500);
             delay(10);
-                tourner_gauche(190);
-            avancer(9512);
-        } else {
-            avancer(3000);
+                tourner_gauche(170);
+            avancer(5000);
             delay(10);
                 tourner_droite(190);
-            avancer(10000);
+            avancer(5000);
+            tourner_gauche(400);
+            avancer(2200);
+        } else {
+            avancer(1500);
+            delay(10);
+                tourner_droite(170);
+            avancer(5000);
+            delay(10);
+                tourner_gauche(190);
+            avancer(6000);
         }
 #endif
 #ifdef PAMI4
         if (equipe == BLEU) {
             // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
             delay(5000);
-            avancer(8000);
+            avancer(6900);
         } else {
             delay(5000);
-            avancer(8000);
+            avancer(6900);
         }
 #endif
-
+#ifdef PAMI5
+        if (equipe == BLEU) {
+            // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
+            delay(5000);
+            avancer(6900);
+        } else {
+            delay(5000);
+            avancer(6900);
+        }
+#endif
 
         mouvement_termine = true;
     }
