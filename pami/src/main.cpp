@@ -44,6 +44,7 @@ char lettreGauche = 'B';
 
 // Valeur decompte initiale
 #define DECOMPTE_INITIAL 5 // secondes
+#define DECOMPTE_INITIAL 5 // secondes
 
 // Paramètres du robot
 const float WHEEL_DIAMETER = 60.0;  // Diamètre des roues en mm
@@ -204,6 +205,9 @@ void loop() {
 
     // Séquence de mouvements (exécutée une seule fois)
     if (!mouvement_termine) {
+
+#define PAMI1
+
 #ifdef PAMI1
         if (equipe == BLEU) {
             // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
