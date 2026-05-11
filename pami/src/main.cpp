@@ -43,8 +43,7 @@ int equipe = BLEU;
 char lettreGauche = 'B';
 
 // Valeur decompte initiale
-#define DECOMPTE_INITIAL 5 // secondes
-#define DECOMPTE_INITIAL 5 // secondes
+#define DECOMPTE_INITIAL 85 // secondes
 
 // Paramètres du robot
 const float WHEEL_DIAMETER = 60.0;  // Diamètre des roues en mm
@@ -173,8 +172,6 @@ void setup() {
    afficher_attente();
 }
 
-#define PAMI3
-
 void loop() {
 
     if (!started) {
@@ -221,7 +218,7 @@ void loop() {
         } else {
             avancer(2400);
             delay(10);
-                tourner_gauche(175);
+                tourner_gauche(155);
             avancer(8000);
             delay(10);
                 tourner_gauche(240);
@@ -229,15 +226,16 @@ void loop() {
         }
 #endif
 #ifdef PAMI2
+        // attention il y a inversion dans le cablage Bleu et Jaune c'est pour cela qu'on ne trourne pas dans le bon sens
         if (equipe == BLEU) {
             // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
-            delay(3000);
+            delay(6000);
             avancer(5000);
             delay(10);
                 tourner_gauche(330);
             avancer(4700);
         } else {
-            delay(3000);
+            delay(6000);
             avancer(5000);
             delay(10);
                 tourner_droite(330);
@@ -247,33 +245,27 @@ void loop() {
 #ifdef PAMI3
         if (equipe == BLEU) {
             // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
-            delay(2000);
+            delay(3000);
             avancer(1500);
             delay(10);
-                tourner_gauche(170);
-            avancer(5000);
-            delay(10);
-                tourner_droite(190);
-            avancer(5000);
-            tourner_gauche(400);
-            avancer(2200);
+                tourner_gauche(150);
+            avancer(11500);
+  
         } else {
+            delay(3000);
             avancer(1500);
             delay(10);
-                tourner_droite(170);
-            avancer(5000);
-            delay(10);
-                tourner_gauche(190);
-            avancer(6000);
+                tourner_droite(150);
+            avancer(11500);
         }
 #endif
 #ifdef PAMI4
         if (equipe == BLEU) {
             // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
-            delay(5000);
+            delay(8500);
             avancer(6900);
         } else {
-            delay(5000);
+            delay(8500);
             avancer(6900);
         }
 #endif
