@@ -203,7 +203,7 @@ void loop() {
     // Séquence de mouvements (exécutée une seule fois)
     if (!mouvement_termine) {
 
-#define PAMI1
+#define PAMININJA
 
 #ifdef PAMININJA
         if (equipe == BLEU) {
@@ -216,7 +216,7 @@ void loop() {
             // delay(10);
             //     tourner_droite(230);
             // avancer(7000);
-            avancer(250);
+            avancer(550);
             tourner_gauche(515);
             avancer(2800);
             stepperG.setMaxSpeed(SPEED / 10);
@@ -250,7 +250,7 @@ void loop() {
             //delay(10);
                 //tourner_gauche(230);
             //avancer(7000);
-            avancer(250);
+            avancer(550);
             tourner_droite(515);
             avancer(2800);
             stepperG.setMaxSpeed(SPEED / 10);
