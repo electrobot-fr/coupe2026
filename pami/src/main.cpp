@@ -216,7 +216,7 @@ void loop() {
             // delay(10);
             //     tourner_droite(230);
             // avancer(7000);
-            avancer(550);
+            avancer(520);
             tourner_gauche(515);
             avancer(2800);
             stepperG.setMaxSpeed(SPEED / 10);
@@ -228,6 +228,10 @@ void loop() {
             stepperG.setMaxSpeed(SPEED / 10);
             stepperD.setMaxSpeed(SPEED / 10);
             avancer(-3200);
+            avancer(2800);
+            stepperG.setMaxSpeed(SPEED / 10);
+            stepperD.setMaxSpeed(SPEED / 10);
+            avancer(-3500);
             avancer(175);
             tourner_droite(515);
             avancer(-1300);
@@ -238,7 +242,7 @@ void loop() {
             avancer(1200);
             tourner_droite(515);
             avancer(2300);
-            avancer(-1500);
+            avancer(-1200);
             tourner_gauche(515);
             avancer(1600);
 
@@ -250,7 +254,7 @@ void loop() {
             //delay(10);
                 //tourner_gauche(230);
             //avancer(7000);
-            avancer(550);
+            avancer(520);
             tourner_droite(515);
             avancer(2800);
             stepperG.setMaxSpeed(SPEED / 10);
@@ -262,9 +266,13 @@ void loop() {
             stepperG.setMaxSpeed(SPEED / 10);
             stepperD.setMaxSpeed(SPEED / 10);
             avancer(-3000);
+            avancer(2800);
+            stepperG.setMaxSpeed(SPEED / 10);
+            stepperD.setMaxSpeed(SPEED / 10);
+            avancer(-3000);
             avancer(150);
             tourner_gauche(515);
-            avancer(-1000);
+            avancer(-1300);
             avancer(3200);
             tourner_droite(515);
             avancer(2700);
@@ -272,7 +280,7 @@ void loop() {
             avancer(1200);
             tourner_gauche(515);
             avancer(2300);
-            avancer(-1500);
+            avancer(-1200);
             tourner_droite(515);
             avancer(1600);
         }
