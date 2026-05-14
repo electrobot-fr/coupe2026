@@ -215,160 +215,78 @@ void loop() {
     if (!mouvement_termine) {
 
 #if PAMI_VARIANT == NINJA
-        if (equipe == BLEU) {
-            // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
-             //tourner_droite(300);
-            //avancer(2800);
-            // delay(10);
-               
-            // avancer(8000);
-            // delay(10);
-            //     tourner_droite(230);
-            // avancer(7000);
-            avancer(520);
-            tourner_gauche(515);
-            stepperG.setMaxSpeed(1.5 * SPEED);
-            stepperD.setMaxSpeed(1.5 * SPEED);
-            avancer(2800);
-            stepperG.setMaxSpeed(SPEED / 10);
-            stepperD.setMaxSpeed(SPEED / 10);
-            avancer(-3200);
-            stepperG.setMaxSpeed(1.5 * SPEED);
-            stepperD.setMaxSpeed(1.5 * SPEED);
-            avancer(2800);
-            stepperG.setMaxSpeed(SPEED / 10);
-            stepperD.setMaxSpeed(SPEED / 10);
-            avancer(-3200);
-            stepperG.setMaxSpeed(1.5 * SPEED);
-            stepperD.setMaxSpeed(1.5 * SPEED);
-            avancer(2800);
-            stepperG.setMaxSpeed(SPEED / 10);
-            stepperD.setMaxSpeed(SPEED / 10);
-            avancer(-3500);
-            avancer(175);
-            tourner_droite(515);
-            avancer(-1700);
-            avancer(3200);
-            tourner_gauche(515);
-            avancer(2550);
-            avancer(-3000);
-            avancer(2550);
-            avancer(-3000);
-            avancer(1200);
-            tourner_droite(515);
-            avancer(2300);
-            avancer(-1200);
-            tourner_gauche(515);
-            avancer(1600);
-
-        } else {
-            //avancer(2500);
-            //delay(10);
-                //tourner_gauche(170);
-            //avancer(8000);
-            //delay(10);
-                //tourner_gauche(230);
-            //avancer(7000);
-            avancer(520);
-            tourner_droite(515);
-            stepperG.setMaxSpeed(1.5 * SPEED);
-            stepperD.setMaxSpeed(1.5 * SPEED);
-            avancer(2800);
-            stepperG.setMaxSpeed(SPEED / 10);
-            stepperD.setMaxSpeed(SPEED / 10);
-            avancer(-3200);
-            stepperG.setMaxSpeed(1.5 * SPEED);
-            stepperD.setMaxSpeed(1.5 * SPEED);
-            avancer(2800);
-            stepperG.setMaxSpeed(SPEED / 10);
-            stepperD.setMaxSpeed(SPEED / 10);
-            avancer(-3200);
-            stepperG.setMaxSpeed(1.5 * SPEED);
-            stepperD.setMaxSpeed(1.5 * SPEED);
-            avancer(2800);
-            stepperG.setMaxSpeed(SPEED / 10);
-            stepperD.setMaxSpeed(SPEED / 10);
-            avancer(-3500);
-            avancer(175);
-            tourner_gauche(515);
-            avancer(-1700);
-            avancer(3200);
-            tourner_droite(515);
-            avancer(2550);
-            avancer(-3000);
-            avancer(2550);
-            avancer(-3000);
-            avancer(1200);
-            tourner_gauche(515);
-            avancer(2300);
-            avancer(-1200);
-            tourner_droite(515);
-            avancer(1600);
-        }
+        // 10 000 = 123cm
+        auto tourner_ext = (equipe == BLEU) ? tourner_gauche : tourner_droite;
+        auto tourner_int = (equipe == BLEU) ? tourner_droite : tourner_gauche;
+        avancer(520);
+        tourner_ext(515);
+        stepperG.setMaxSpeed(1.5 * SPEED);
+        stepperD.setMaxSpeed(1.5 * SPEED);
+        avancer(2800);
+        stepperG.setMaxSpeed(SPEED / 10);
+        stepperD.setMaxSpeed(SPEED / 10);
+        avancer(-3200);
+        stepperG.setMaxSpeed(1.5 * SPEED);
+        stepperD.setMaxSpeed(1.5 * SPEED);
+        avancer(2800);
+        stepperG.setMaxSpeed(SPEED / 10);
+        stepperD.setMaxSpeed(SPEED / 10);
+        avancer(-3200);
+        stepperG.setMaxSpeed(1.5 * SPEED);
+        stepperD.setMaxSpeed(1.5 * SPEED);
+        avancer(2800);
+        stepperG.setMaxSpeed(SPEED / 10);
+        stepperD.setMaxSpeed(SPEED / 10);
+        avancer(-3500);
+        avancer(175);
+        tourner_int(515);
+        avancer(-1700);
+        avancer(3200);
+        tourner_ext(515);
+        avancer(2550);
+        avancer(-3000);
+        avancer(2550);
+        avancer(-3000);
+        avancer(1200);
+        tourner_int(515);
+        avancer(2300);
+        avancer(-1200);
+        tourner_ext(515);
+        avancer(1600);
 #endif
 #if PAMI_VARIANT == PAMI1
-        if (equipe == BLEU) {
-            // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
-            avancer(2400);
-            delay(10);
-                tourner_droite(175);
-            avancer(8000);
-            delay(10);
-                tourner_droite(240);
-            avancer(6470);
-        } else {
-            avancer(2400);
-            delay(10);
-                tourner_gauche(155);
-            avancer(8000);
-            delay(10);
-                tourner_gauche(240);
-            avancer(6470);
-        }
+        // PAMI 1: 6097. Premier virage asymétrique : 175 (BLEU) vs 155 (JAUNE).
+        auto tourner_ext = (equipe == BLEU) ? tourner_droite : tourner_gauche;
+        avancer(2400);
+        delay(10);
+        tourner_ext((equipe == BLEU) ? 175 : 155);
+        avancer(8000);
+        delay(10);
+        tourner_ext(240);
+        avancer(6470);
 #endif
 #if PAMI_VARIANT == PAMI2
-        // attention il y a inversion dans le cablage Bleu et Jaune c'est pour cela qu'on ne trourne pas dans le bon sens
-        if (equipe == BLEU) {
-            // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
-            delay(6000);
-            avancer(5000);
-            delay(10);
-                tourner_gauche(330);
-            avancer(4700);
-        } else {
-            delay(6000);
-            avancer(5000);
-            delay(10);
-                tourner_droite(330);
-            avancer(4700);
-        }
+        // PAMI 2: 13089. Attention : inversion dans le câblage Bleu/Jaune (sens des virages inversé)
+        auto tourner_ext = (equipe == BLEU) ? tourner_gauche : tourner_droite;
+        delay(6000);
+        avancer(5000);
+        delay(10);
+        tourner_ext(330);
+        avancer(4700);
 #endif
 #if PAMI_VARIANT == PAMI3
-        if (equipe == BLEU) {
-            // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
-            delay(3000);
-            avancer(1500);
-            delay(10);
-                tourner_gauche(150);
-            avancer(11500);
-  
-        } else {
-            delay(3000);
-            avancer(1500);
-            delay(10);
-                tourner_droite(150);
-            avancer(11500);
-        }
+        // PAMI 3: 9593
+        auto tourner_ext = (equipe == BLEU) ? tourner_gauche : tourner_droite;
+        delay(3000);
+        avancer(1500);
+        delay(10);
+        tourner_ext(150);
+        avancer(11500);
 #endif
 #if PAMI_VARIANT == PAMI4
-        if (equipe == BLEU) {
-            // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
-            delay(8500);
-            avancer(6900);
-        } else {
-            delay(8500);
-            avancer(6900);
-        }
+        // PAMI 4 : ligne droite, identique BLEU/JAUNE
+        delay(8500);
+        avancer(6900);
 #endif
 
         mouvement_termine = true;
