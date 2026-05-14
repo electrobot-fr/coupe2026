@@ -37,6 +37,24 @@ make upload-pami-1
 
 ⚠️ Compiler directement avec `cd pami && pio run` échoue : `PAMI_VARIANT` n'est pas défini et le code lève un `#error`. Toujours passer par le Makefile.
 
+### Décompte initial (DECOMPTE_INITIAL)
+
+Chaque variante a une valeur de décompte par défaut (en secondes) :
+
+| Variante | Décompte par défaut |
+|---|---|
+| `pami-ninja` | 5 s |
+| `pami-1` … `pami-4` | 87 s |
+
+Pour surcharger ponctuellement la valeur (sans modifier le code), passer `DECOMPTE=<secondes>` à `make` :
+
+```bash
+make pami-1 DECOMPTE=30           # compile pami-1 avec un décompte de 30 s
+make upload-pami-ninja DECOMPTE=10 # flashe ninja avec un décompte de 10 s
+```
+
+La variable `DECOMPTE` n'est utilisée que si elle est définie ; sinon la valeur par défaut de la variante est utilisée.
+
 ### Ajouter une nouvelle variante de PAMI
 
 1. Ajouter un `#define` dans `pami/src/main.cpp` (ex. `#define PAMI5 5`)

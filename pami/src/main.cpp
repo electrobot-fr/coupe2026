@@ -53,8 +53,10 @@ bool mouvement_termine = false;
 int equipe = BLEU;
 char lettreGauche = 'B';
 
-// Valeur decompte initiale
-#define DECOMPTE_INITIAL 5 // secondes
+// Valeur decompte initiale (en secondes) — peut être surchargée via le Makefile
+#ifndef DECOMPTE_INITIAL
+#define DECOMPTE_INITIAL 5
+#endif
 
 // Paramètres du robot
 const float WHEEL_DIAMETER = 60.0;  // Diamètre des roues en mm
