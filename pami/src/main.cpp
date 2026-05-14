@@ -1,5 +1,16 @@
 #include <Arduino.h>
 
+// PAMI variant selection — set via Makefile build flag (-DPAMI_VARIANT=N)
+#define NINJA 0
+#define PAMI1 1
+#define PAMI2 2
+#define PAMI3 3
+#define PAMI4 4
+
+#ifndef PAMI_VARIANT
+#error "PAMI_VARIANT not set. Build via Makefile target: pami-ninja, pami-1, pami-2, pami-3, pami-4"
+#endif
+
 // Servo
 #include <ESP32Servo.h>
 
@@ -203,9 +214,7 @@ void loop() {
     // Séquence de mouvements (exécutée une seule fois)
     if (!mouvement_termine) {
 
-#define PAMININJA
-
-#ifdef PAMININJA
+#if PAMI_VARIANT == NINJA
         if (equipe == BLEU) {
             // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
              //tourner_droite(300);
@@ -297,7 +306,7 @@ void loop() {
             avancer(1600);
         }
 #endif
-#ifdef PAMI1
+#if PAMI_VARIANT == PAMI1
         if (equipe == BLEU) {
             // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
             avancer(2400);
@@ -317,7 +326,7 @@ void loop() {
             avancer(6470);
         }
 #endif
-#ifdef PAMI2
+#if PAMI_VARIANT == PAMI2
         // attention il y a inversion dans le cablage Bleu et Jaune c'est pour cela qu'on ne trourne pas dans le bon sens
         if (equipe == BLEU) {
             // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
@@ -334,7 +343,7 @@ void loop() {
             avancer(4700);
         }
 #endif
-#ifdef PAMI3
+#if PAMI_VARIANT == PAMI3
         if (equipe == BLEU) {
             // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
             delay(3000);
@@ -351,7 +360,7 @@ void loop() {
             avancer(11500);
         }
 #endif
-#ifdef PAMI4
+#if PAMI_VARIANT == PAMI4
         if (equipe == BLEU) {
             // 10 000 = 123cm, PAMI 1: 6097, PAMI 2: 13089, PAMI 3: 9593
             delay(8500);
