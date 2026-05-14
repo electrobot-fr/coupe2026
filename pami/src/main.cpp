@@ -43,7 +43,7 @@ int equipe = BLEU;
 char lettreGauche = 'B';
 
 // Valeur decompte initiale
-#define DECOMPTE_INITIAL 85 // secondes
+#define DECOMPTE_INITIAL 5 // secondes
 
 // Paramètres du robot
 const float WHEEL_DIAMETER = 60.0;  // Diamètre des roues en mm
@@ -218,26 +218,32 @@ void loop() {
             // avancer(7000);
             avancer(520);
             tourner_gauche(515);
-            avancer(2800);
-            stepperG.setMaxSpeed(SPEED / 10);
-            stepperD.setMaxSpeed(SPEED / 10);
-            avancer(-3000);
-            stepperG.setMaxSpeed(SPEED);
-            stepperD.setMaxSpeed(SPEED);
+            stepperG.setMaxSpeed(1.5 * SPEED);
+            stepperD.setMaxSpeed(1.5 * SPEED);
             avancer(2800);
             stepperG.setMaxSpeed(SPEED / 10);
             stepperD.setMaxSpeed(SPEED / 10);
             avancer(-3200);
+            stepperG.setMaxSpeed(1.5 * SPEED);
+            stepperD.setMaxSpeed(1.5 * SPEED);
+            avancer(2800);
+            stepperG.setMaxSpeed(SPEED / 10);
+            stepperD.setMaxSpeed(SPEED / 10);
+            avancer(-3200);
+            stepperG.setMaxSpeed(1.5 * SPEED);
+            stepperD.setMaxSpeed(1.5 * SPEED);
             avancer(2800);
             stepperG.setMaxSpeed(SPEED / 10);
             stepperD.setMaxSpeed(SPEED / 10);
             avancer(-3500);
             avancer(175);
             tourner_droite(515);
-            avancer(-1300);
+            avancer(-1700);
             avancer(3200);
             tourner_gauche(515);
-            avancer(2700);
+            avancer(2550);
+            avancer(-3000);
+            avancer(2550);
             avancer(-3000);
             avancer(1200);
             tourner_droite(515);
@@ -259,23 +265,23 @@ void loop() {
             avancer(2800);
             stepperG.setMaxSpeed(SPEED / 10);
             stepperD.setMaxSpeed(SPEED / 10);
-            avancer(-3000);
+            avancer(-3200);
             stepperG.setMaxSpeed(SPEED);
             stepperD.setMaxSpeed(SPEED);
             avancer(2800);
             stepperG.setMaxSpeed(SPEED / 10);
             stepperD.setMaxSpeed(SPEED / 10);
-            avancer(-3000);
+            avancer(-3200);
             avancer(2800);
             stepperG.setMaxSpeed(SPEED / 10);
             stepperD.setMaxSpeed(SPEED / 10);
-            avancer(-3000);
-            avancer(150);
+            avancer(-3200);
+            avancer(175);
             tourner_gauche(515);
-            avancer(-1300);
+            avancer(-1700);
             avancer(3200);
             tourner_droite(515);
-            avancer(2700);
+            avancer(2550);
             avancer(-3000);
             avancer(1200);
             tourner_gauche(515);
