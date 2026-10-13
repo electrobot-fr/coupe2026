@@ -1,6 +1,8 @@
 #include <FastAccelStepper.h>
 #include <SerialTransfer.h>
 
+// #define DEBUG_SERIAL // décommenter pour afficher le debug série
+
 #define LED_BUILTIN 2
 #define MAX_SPEED 3000
 #define DEAD_ZONE (MAX_SPEED / 10)
@@ -43,11 +45,20 @@ static void setStepperTarget(FastAccelStepper *s, int speed)
 
 #define REG_OPR_MODE 0x3D
 #define REG_EULER    0x1A
-#define MODE_NDOF    0x0C
-#define BNO_PERIOD   100 // ms entre deux lectures
+#define MODE_IMU     0x08 // gyro + accéléro, sans magnéto : cap 0 = orientation au démarrage
 
-unsigned long lastBnoTime = 0;
+// Asservissement en cap
+#define CTRL_PERIOD  20     // ms (50 Hz)
+#define KP           80.0f  // (steps/s) par degré d'erreur
+#define KD           4.0f   // (steps/s) par degré/s
+#define ANGLE_DEADBAND 1.0f // degrés : pas de correction en dessous
+#define MAX_ROT      (MAX_SPEED / 2)
+#define ROT_SIGN     -1     // inverser (-1) si le robot s'éloigne de la consigne
+
+unsigned long lastCtrlTime = 0;
 bool bnoOk = false;
+int cmdX = 0, cmdY = 0;
+float lastError = 0;
 
 bool readRegs(uint8_t reg, uint8_t len, uint8_t *out)
 {
@@ -179,70 +190,92 @@ void setup()
   Serial.begin(115200);
 
   delay(700); // temps de démarrage du BNO055
-  Serial.println("\nBNO055 Euler (NDOF)");
+#ifdef DEBUG_SERIAL
+  Serial.println("\nbase_roulante : init");
+#endif
 
   // Essai RX=18/TX=21, puis inversé si pas de réponse
   Serial1.begin(115200, SERIAL_8N1, BNO_PIN_A, BNO_PIN_B);
-  bool ok = writeReg(REG_OPR_MODE, MODE_NDOF);
+  bool ok = writeReg(REG_OPR_MODE, MODE_IMU);
+  int rxPin = BNO_PIN_A, txPin = BNO_PIN_B;
   if (!ok)
   {
     Serial1.end();
     Serial1.begin(115200, SERIAL_8N1, BNO_PIN_B, BNO_PIN_A);
-    ok = writeReg(REG_OPR_MODE, MODE_NDOF);
+    ok = writeReg(REG_OPR_MODE, MODE_IMU);
+    rxPin = BNO_PIN_B;
+    txPin = BNO_PIN_A;
   }
-  bnoOk = ok;
+  bnoOk = ok; // sinon pas d'asservissement en cap (LED éteinte)
+#ifdef DEBUG_SERIAL
   if (ok)
-  {
-    Serial.println("NDOF mode set");
-  }
+    Serial.printf("BNO055 OK (mode IMU, RX=GPIO%d TX=GPIO%d)\n", rxPin, txPin);
   else
-  {
-    Serial.println("Failed to set NDOF mode");
-  }
+    Serial.println("BNO055 ne repond pas : pas d'asservissement en cap");
+  Serial.println("En attente des paquets de la telecommande...");
+#endif
   delay(30);
+}
+
+// Ramène un angle dans [-180, 180[
+static float wrap180(float a)
+{
+  while (a >= 180.0f) a -= 360.0f;
+  while (a < -180.0f) a += 360.0f;
+  return a;
+}
+
+// Correction de rotation (steps/s) pour tenir le cap consigne (degrés)
+static int headingCorrection(float consigne)
+{
+  uint8_t buf[2];
+  if (!bnoOk || !readRegs(REG_EULER, 2, buf))
+    return 0;
+
+  float heading = (int16_t)(buf[0] | (buf[1] << 8)) / 16.0f;
+  float error = wrap180(consigne - heading);
+  float dError = wrap180(error - lastError) * 1000.0f / CTRL_PERIOD;
+  lastError = error;
+
+  float r = 0;
+  if (fabsf(error) > ANGLE_DEADBAND)
+    r = KP * error + KD * dError;
+  r = constrain(r, -MAX_ROT, MAX_ROT);
+
+#ifdef DEBUG_SERIAL
+  Serial.printf(">consigne:%.2f\n>mesure:%.2f\n>reponse:%d\n", consigne, wrap180(heading), ROT_SIGN * (int)r);
+#endif
+
+  // LED basculée à chaque cycle d'asserv : clignote à CTRL_PERIOD * 2
+  digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+  return ROT_SIGN * (int)r;
 }
 
 void loop()
 {
   if (transfer.available())
   {
-    digitalWrite(LED_BUILTIN, HIGH);
     lastPacketTime = millis();
     uint16_t recSize = 0;
     recSize = transfer.rxObj(message, recSize);
+    message.z = 0; // consigne d'angle (degrés), constante pour le moment
 
-    int x = map(message.x, 0, 1023, -MAX_SPEED, MAX_SPEED);
-    int y = map(message.y, 0, 1023, -MAX_SPEED, MAX_SPEED);
-    int z = map(message.z, 0, 1023, -MAX_SPEED, MAX_SPEED);
+    cmdX = map(message.x, 0, 1023, -MAX_SPEED, MAX_SPEED);
+    cmdY = map(message.y, 0, 1023, -MAX_SPEED, MAX_SPEED);
 
-    if (abs(x) <= DEAD_ZONE) x = 0;
-    if (abs(y) <= DEAD_ZONE) y = 0;
-    if (abs(z) <= DEAD_ZONE) z = 0;
-
-    move(-x, -y, -z);
-    digitalWrite(LED_BUILTIN, LOW);
-  }
-
-  // Lecture BNO055 (désactivée si absent : chaque échec bloque 100 ms)
-  if (bnoOk && millis() - lastBnoTime >= BNO_PERIOD)
-  {
-    lastBnoTime = millis();
-    uint8_t buf[2];
-    if (readRegs(REG_EULER, 2, buf))
-    {
-      int16_t h = (int16_t)(buf[0] | (buf[1] << 8));
-      float z = h / 16.0f; // heading = rotation autour de l'axe Z
-      Serial.printf(">Z:%.2f\n", z);
-    }
-    else
-    {
-      Serial.println("read error");
-    }
+    if (abs(cmdX) <= DEAD_ZONE) cmdX = 0;
+    if (abs(cmdY) <= DEAD_ZONE) cmdY = 0;
   }
 
   // Watchdog : arrêt moteurs si perte de communication
   if (millis() - lastPacketTime > WATCHDOG_TIMEOUT)
   {
     move(0, 0, 0);
+    digitalWrite(LED_BUILTIN, LOW);
+  }
+  else if (millis() - lastCtrlTime >= CTRL_PERIOD)
+  {
+    lastCtrlTime = millis();
+    move(-cmdX, -cmdY, headingCorrection(message.z));
   }
 }
