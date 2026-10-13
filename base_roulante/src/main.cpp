@@ -36,6 +36,62 @@ static void setStepperTarget(FastAccelStepper *s, int speed)
   s->applySpeedAcceleration();
 }
 
+// BNO055 en UART sur le connecteur J1 de carte_moteurs (GPIO18 / GPIO21).
+// TX/RX sont détectés au démarrage : si le BNO ne répond pas, on inverse.
+#define BNO_PIN_A 18 // J1.3 (OLED_SCK)
+#define BNO_PIN_B 21 // J1.4 (OLED_SDA)
+
+#define REG_OPR_MODE 0x3D
+#define REG_EULER    0x1A
+#define MODE_NDOF    0x0C
+#define BNO_PERIOD   100 // ms entre deux lectures
+
+unsigned long lastBnoTime = 0;
+bool bnoOk = false;
+
+bool readRegs(uint8_t reg, uint8_t len, uint8_t *out)
+{
+  while (Serial1.available()) Serial1.read();
+  uint8_t cmd[] = {0xAA, 0x01, reg, len};
+  Serial1.write(cmd, 4);
+
+  uint32_t t0 = millis();
+  while (Serial1.available() < 2)
+  {
+    if (millis() - t0 > 100) return false;
+  }
+  uint8_t hdr = Serial1.read();
+  uint8_t n = Serial1.read();
+  if (hdr != 0xBB) return false;
+
+  t0 = millis();
+  for (uint8_t i = 0; i < n; i++)
+  {
+    while (!Serial1.available())
+    {
+      if (millis() - t0 > 100) return false;
+    }
+    out[i] = Serial1.read();
+  }
+  return true;
+}
+
+bool writeReg(uint8_t reg, uint8_t val)
+{
+  while (Serial1.available()) Serial1.read();
+  uint8_t cmd[] = {0xAA, 0x00, reg, 0x01, val};
+  Serial1.write(cmd, 5);
+
+  uint32_t t0 = millis();
+  while (Serial1.available() < 2)
+  {
+    if (millis() - t0 > 100) return false;
+  }
+  uint8_t hdr = Serial1.read();
+  uint8_t status = Serial1.read();
+  return (hdr == 0xEE && status == 0x01);
+}
+
 struct __attribute__((packed)) STRUCT
 {
   int16_t x;
@@ -121,6 +177,29 @@ void setup()
   Serial2.begin(115200, SERIAL_8N1, 16, 17);
   transfer.begin(Serial2);
   Serial.begin(115200);
+
+  delay(700); // temps de démarrage du BNO055
+  Serial.println("\nBNO055 Euler (NDOF)");
+
+  // Essai RX=18/TX=21, puis inversé si pas de réponse
+  Serial1.begin(115200, SERIAL_8N1, BNO_PIN_A, BNO_PIN_B);
+  bool ok = writeReg(REG_OPR_MODE, MODE_NDOF);
+  if (!ok)
+  {
+    Serial1.end();
+    Serial1.begin(115200, SERIAL_8N1, BNO_PIN_B, BNO_PIN_A);
+    ok = writeReg(REG_OPR_MODE, MODE_NDOF);
+  }
+  bnoOk = ok;
+  if (ok)
+  {
+    Serial.println("NDOF mode set");
+  }
+  else
+  {
+    Serial.println("Failed to set NDOF mode");
+  }
+  delay(30);
 }
 
 void loop()
@@ -142,6 +221,23 @@ void loop()
 
     move(-x, -y, -z);
     digitalWrite(LED_BUILTIN, LOW);
+  }
+
+  // Lecture BNO055 (désactivée si absent : chaque échec bloque 100 ms)
+  if (bnoOk && millis() - lastBnoTime >= BNO_PERIOD)
+  {
+    lastBnoTime = millis();
+    uint8_t buf[2];
+    if (readRegs(REG_EULER, 2, buf))
+    {
+      int16_t h = (int16_t)(buf[0] | (buf[1] << 8));
+      float z = h / 16.0f; // heading = rotation autour de l'axe Z
+      Serial.printf(">Z:%.2f\n", z);
+    }
+    else
+    {
+      Serial.println("read error");
+    }
   }
 
   // Watchdog : arrêt moteurs si perte de communication
