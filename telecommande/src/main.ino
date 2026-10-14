@@ -18,6 +18,12 @@ const unsigned long RETOURNE_DELAY = 500;
 const unsigned long POMPE_OFF_DELAY = 200;
 const unsigned long VANNE_DELAY = 800;
 
+// Consigne d'angle absolue (degrés) : le joystick de rotation fait tourner la consigne
+const float ROT_RATE = 90.0;     // degrés/s à fond de joystick
+const int16_t ROT_DEAD_ZONE = 50; // autour du centre (512)
+float consigneAngle = 0;
+unsigned long lastAngleTime = 0;
+
 // Bouton i (pin) controle la noisette hw = 3-i
 enum NoisetteState : uint8_t {
   N_IDLE,
@@ -97,6 +103,7 @@ void setup()
   for (uint8_t pin = 4; pin <= 13; pin++) pinMode(pin, INPUT_PULLUP);
 
   display.setBrightness(4);
+  lastAngleTime = millis();
 }
 
 void loop()
@@ -106,7 +113,17 @@ void loop()
   // Joysticks
   message.x = analogRead(A3);
   message.y = map(analogRead(A2), 0, 1023, 1023, 0);
-  message.z = analogRead(A0);
+
+  // Rotation: intégration du joystick en consigne absolue, ramenée dans [-180, 180[
+  int16_t rot = analogRead(A0) - 512;
+  float dt = (now - lastAngleTime) / 1000.0;
+  lastAngleTime = now;
+  if (abs(rot) > ROT_DEAD_ZONE) {
+    consigneAngle += ROT_RATE * rot / 512.0 * dt;
+    while (consigneAngle >= 180.0) consigneAngle -= 360.0;
+    while (consigneAngle < -180.0) consigneAngle += 360.0;
+  }
+  message.z = (int16_t)round(consigneAngle);
 
   // Bouton 8: start / reset
   if (debounceRising(8, btn8Prev, lastDebounce8, now)) {

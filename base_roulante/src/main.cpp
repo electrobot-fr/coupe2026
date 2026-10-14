@@ -1,7 +1,7 @@
 #include <FastAccelStepper.h>
 #include <SerialTransfer.h>
 
-// #define DEBUG_SERIAL // décommenter pour afficher le debug série
+#define DEBUG_SERIAL // décommenter pour afficher le debug série
 
 #define LED_BUILTIN 2
 #define MAX_SPEED 3000
@@ -49,10 +49,10 @@ static void setStepperTarget(FastAccelStepper *s, int speed)
 
 // Asservissement en cap
 #define CTRL_PERIOD  20     // ms (50 Hz)
-#define KP           80.0f  // (steps/s) par degré d'erreur
+#define KP           120.0f  // (steps/s) par degré d'erreur
 #define KD           4.0f   // (steps/s) par degré/s
 #define ANGLE_DEADBAND 1.0f // degrés : pas de correction en dessous
-#define MAX_ROT      (MAX_SPEED / 2)
+#define MAX_ROT      MAX_SPEED
 #define ROT_SIGN     -1     // inverser (-1) si le robot s'éloigne de la consigne
 
 unsigned long lastCtrlTime = 0;
@@ -107,7 +107,7 @@ struct __attribute__((packed)) STRUCT
 {
   int16_t x;
   int16_t y;
-  int16_t z;
+  int16_t z; // consigne d'angle absolue (degrés), envoyée par la télécommande
   uint16_t compteur[32]; 
 } message;
 
@@ -243,7 +243,7 @@ static int headingCorrection(float consigne)
   r = constrain(r, -MAX_ROT, MAX_ROT);
 
 #ifdef DEBUG_SERIAL
-  Serial.printf(">consigne:%.2f\n>mesure:%.2f\n>reponse:%d\n", consigne, wrap180(heading), ROT_SIGN * (int)r);
+  Serial.printf(">t:%lu\n>consigne:%.2f\n>mesure:%.2f\n>reponse:%d\n", millis(), consigne, wrap180(heading), ROT_SIGN * (int)r);
 #endif
 
   // LED basculée à chaque cycle d'asserv : clignote à CTRL_PERIOD * 2
@@ -258,7 +258,6 @@ void loop()
     lastPacketTime = millis();
     uint16_t recSize = 0;
     recSize = transfer.rxObj(message, recSize);
-    message.z = 0; // consigne d'angle (degrés), constante pour le moment
 
     cmdX = map(message.x, 0, 1023, -MAX_SPEED, MAX_SPEED);
     cmdY = map(message.y, 0, 1023, -MAX_SPEED, MAX_SPEED);

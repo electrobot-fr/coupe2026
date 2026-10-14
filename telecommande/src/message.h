@@ -5,7 +5,7 @@ struct __attribute__((packed)) STRUCT
 {
   int16_t x;
   int16_t y;
-  int16_t z;
+  int16_t z; // consigne d'angle absolue (degrés, [-180, 180[)
   // Vannes: 0-3
   // Pompes: 4-7
   // Servo bras: 8-11

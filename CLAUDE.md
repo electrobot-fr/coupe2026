@@ -49,7 +49,7 @@ The `STRUCT` is **copy-pasted into every module** — there is no shared header.
 struct __attribute__((packed)) STRUCT {
   int16_t x;           // joystick X axis (0–1023 raw from telecommande)
   int16_t y;           // joystick Y axis
-  int16_t z;           // joystick Z axis (rotation)
+  int16_t z;           // absolute heading setpoint in degrees [-180, 180[ (integrated from joystick A0 by telecommande)
   uint16_t compteur[32]; // PWM values for 32 servos (used by carte_actionneurs)
 } message;
 ```
